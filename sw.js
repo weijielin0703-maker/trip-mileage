@@ -1,6 +1,6 @@
 // Paths are resolved against the service worker scope, so /trip-mileage/ works
 // the same as hosting at the domain root. Do not prefix these with "/".
-const CACHE = 'trip-v4';
+const CACHE = 'trip-v5';
 const FILES = ['./', './index.html', './app.js', './routing.js', './expense-sheet.js', './style.css', './manifest.json', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png', './company-template.xls', './vendor/xlsx.full.min.js'];
 
 function scoped(path) {

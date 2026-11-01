@@ -1,11 +1,201 @@
-body{font-family:system-ui,"PingFang TC","Noto Sans TC",sans-serif;margin:0;background:#f4f6f8;color:#222;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
-header{background:#1565c0;color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 12px}h1{margin:0;font-size:1.2em}
-main{padding:12px;max-width:640px;margin:auto}section{background:#fff;border-radius:10px;padding:12px;margin-bottom:12px}
-button,.btn{font-size:1em;padding:8px 12px;border:0;border-radius:8px;background:#e3e8ef;cursor:pointer}
-.big{display:block;width:100%;padding:16px;font-size:1.2em;background:#1565c0;color:#fff;margin:8px 0}
-.green{background:#2e7d32}.danger{background:#c62828;color:#fff}
-.row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.row input{flex:1;padding:8px;font-size:max(16px,1em)}
-ol,ul{padding-left:20px}li{margin:6px 0}.sub{color:#666;font-size:.85em}.mini{padding:4px 8px;font-size:.85em}
-label{display:block;margin:8px 0}label input[type=number]{width:100%;padding:8px;font-size:max(16px,1em)}
-table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:4px;text-align:left}
-#status{color:#1565c0;min-height:1.2em}
+/* Cubic 11（俐方體）by ACh-K, SIL OFL 1.1. License: fonts/OFL.txt */
+@font-face{
+  font-family:"Cubic 11";
+  src:url("./fonts/Cubic_11.woff2") format("woff2");
+  font-weight:400;
+  font-style:normal;
+  font-display:swap;
+}
+:root{
+  --ink:#1c140c;
+  --cream:#fff4cc;
+  --cream-2:#ffe7a3;
+  --grass:#58a332;
+  --grass-deep:#1d4a24;
+  --gold:#f0c030;
+  --gold-hi:#ffe98a;
+  --blue:#2d6fe0;
+  --blue-hi:#8cbcff;
+  --green:#2e9a3a;
+  --green-hi:#8ee08a;
+  --red:#d64545;
+  --red-hi:#ffb0a8;
+  --stone:#efe4cc;
+  --muted:#4a3e32;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  margin:0;
+  color:var(--ink);
+  font-family:"Cubic 11","PingFang TC","Noto Sans TC",sans-serif;
+  font-size:16px;
+  font-weight:400;
+  font-synthesis:none;
+  line-height:1.45;
+  text-rendering:optimizeSpeed;
+  -webkit-font-smoothing:none;
+  background-color:#3f8a28;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'><rect width='16' height='16' fill='%2358a332'/><rect width='8' height='8' fill='%2368b440'/><rect x='8' y='8' width='8' height='8' fill='%2368b440'/><rect x='2' y='11' width='2' height='2' fill='%233e7a22'/><rect x='12' y='2' width='2' height='2' fill='%233e7a22'/></svg>");
+  background-size:16px 16px;
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:var(--grass-deep);
+  color:var(--cream);
+  border-bottom:4px solid var(--ink);
+  padding:calc(12px + env(safe-area-inset-top)) 16px 14px;
+}
+.badge{
+  width:64px;
+  height:64px;
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+  flex:none;
+  animation:bob 1.2s steps(2,end) infinite;
+}
+.brand-kicker{margin:0 0 2px;color:var(--gold);font-size:12px}
+h1{margin:0;font-size:24px;font-weight:400;line-height:1.2}
+main{max-width:640px;margin:0 auto;padding:16px 14px 28px}
+.win{
+  background:var(--cream);
+  border:4px solid var(--ink);
+  box-shadow:6px 6px 0 var(--ink);
+  padding:14px 12px 12px;
+  margin:0 6px 22px 0;
+}
+.win > h2{margin:0 0 12px;font-size:16px;font-weight:400}
+.win > h2 span{
+  display:inline-block;
+  background:var(--ink);
+  color:var(--cream);
+  padding:4px 8px 6px;
+  box-shadow:4px 4px 0 var(--gold);
+}
+.flavor{margin:0 0 8px;font-size:16px}
+button,.btn{
+  font-family:inherit;
+  font-size:16px;
+  font-weight:400;
+  color:var(--ink);
+  background:var(--stone);
+  border:4px solid var(--ink);
+  box-shadow:0 4px 0 var(--ink);
+  min-height:48px;
+  padding:8px 12px;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+button:active,.btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--ink)}
+.big{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:100%;
+  min-height:64px;
+  margin:8px 0;
+  font-size:24px;
+  line-height:1.25;
+}
+.gold{background:var(--gold);box-shadow:0 4px 0 var(--ink),inset 0 4px 0 var(--gold-hi)}
+.blue{background:var(--blue);color:#f4fbff;box-shadow:0 4px 0 var(--ink),inset 0 4px 0 var(--blue-hi)}
+.green{background:var(--green);color:#f3fff4;box-shadow:0 4px 0 var(--ink),inset 0 4px 0 var(--green-hi)}
+.danger{background:var(--red);color:#fff8f6;box-shadow:0 4px 0 var(--ink),inset 0 4px 0 var(--red-hi)}
+.gold:active,.blue:active,.green:active,.danger:active{box-shadow:0 0 0 var(--ink)}
+.ico{width:24px;height:24px;flex:none;shape-rendering:crispEdges}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:stretch}
+.row input{flex:1;min-width:0}
+.mini{min-height:44px;padding:6px 10px}
+input,button,label{font-family:inherit}
+input[type=text],input:not([type]),input[type=number],#q{
+  width:100%;
+  font-size:16px;
+  color:var(--ink);
+  background:#fff;
+  border:4px solid var(--ink);
+  padding:10px;
+  border-radius:0;
+  touch-action:manipulation;
+}
+#q{font-size:16px}
+input::placeholder{color:#8a7b68}
+ol,ul{list-style:none;margin:0;padding:0}
+.arrival{
+  border-top:4px solid var(--ink);
+  padding:10px 0 4px;
+}
+.arrival:first-child{border-top:0;padding-top:0}
+.kicker{margin:0 0 4px;font-size:24px;line-height:1.3}
+.sub{color:var(--muted);font-size:12px;line-height:1.45}
+#status{color:var(--grass-deep);min-height:1.2em;margin-top:6px;font-size:16px}
+#status:not(:empty)::after{content:" ▌";animation:blink 1s steps(1,end) infinite}
+#result:empty{display:none}
+#trip{display:flex;flex-direction:column}
+#trip > h2{order:0}
+#result{order:3}
+#trip:has(#tripIdle:not([hidden])) #result{order:1}
+#trip:has(#result:not(:empty)) .flavor{display:none}
+#tripIdle,#tripActive,#status{order:2}
+.kicker,.type,.hist,.place{overflow-wrap:anywhere}
+.log-kicker{
+  display:inline-block;
+  margin:0 0 8px;
+  background:var(--ink);
+  color:var(--gold);
+  padding:4px 8px;
+  font-size:12px;
+  box-shadow:4px 4px 0 var(--gold);
+}
+.log-kicker::before{content:"◆ "}
+.type{margin:0 0 10px;min-height:1.35em;font-size:24px;line-height:1.35}
+.type::after{content:"▌";animation:blink 1s steps(1,end) infinite}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+.score > div{
+  background:var(--ink);
+  color:var(--cream);
+  text-align:center;
+  padding:10px 6px 8px;
+  box-shadow:inset 0 0 0 4px var(--gold);
+}
+.num{font-size:36px;line-height:1;color:#ffe14a}
+.lab{margin-top:6px;font-size:12px;color:var(--cream)}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:0 0 8px}
+th,td{border-bottom:2px solid var(--ink);padding:6px 4px;text-align:left;vertical-align:top}
+th{background:var(--cream-2);font-weight:400}
+.loot{margin:4px 0;font-size:16px}
+.loot b{font-weight:400;background:var(--gold);padding:0 4px}
+.hist,.place{border-top:4px dashed var(--ink);padding:8px 0}
+.hist:first-child,.place:first-child{border-top:0}
+.hist b,.place b{font-weight:400}
+.check{display:flex;align-items:center;gap:8px;margin:8px 0}
+input[type=checkbox]{
+  appearance:none;
+  width:28px;
+  height:28px;
+  margin:0;
+  flex:none;
+  border:4px solid var(--ink);
+  background:#fff;
+  box-shadow:0 4px 0 var(--ink);
+}
+input[type=checkbox]:checked{background:var(--green);box-shadow:inset 0 0 0 4px #fff,0 4px 0 var(--ink)}
+input[type=checkbox]:active{transform:translateY(4px);box-shadow:0 0 0 var(--ink)}
+label{display:block;margin:8px 0}
+label input[type=number]{margin-top:6px}
+.fineprint{margin:0 6px 12px 0;color:#143018;font-size:12px;line-height:1.5}
+[hidden]{display:none !important}
+@keyframes blink{50%{opacity:0}}
+@keyframes bob{to{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){
+  .badge,.type::after,#status:not(:empty)::after{animation:none}
+  button:active,.btn:active,input[type=checkbox]:active{transform:none}
+}

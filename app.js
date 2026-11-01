@@ -39,21 +39,27 @@ const r=await Routing.computeTrip(st,{countRamps:S.settings.countRamps});
 const trip={id:Date.now(),date:new Date(st[0].time||Date.now()).toLocaleDateString('zh-TW'),stops:st,route:routeStr(st),total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km,legs:r.legs};
 S.trips.unshift(trip);S.current=null;await save();status('');render();showResult(trip)}catch(e){status(e.message||'路線計算失敗')}}
 function summary(t){const m=money(t.total_km);return `${t.date} ${t.route}\n總里程 ${t.total_km} km（國道 ${t.freeway_km} km）`+(m!=null?`\n油資 ${m} 元（${S.settings.rate} 元/km）`:'')+'\n'+t.legs.map(l=>`  ${l.from} → ${l.to}：${l.km} km（國道 ${l.freeway_km}）`).join('\n')}
-function showResult(t){const m=money(t.total_km);$('result').innerHTML=`<h3>${esc(t.route)}</h3><table><tr><th>路段</th><th>km</th><th>國道</th></tr>`+
+function typeLine(el,text){if(!el)return;clearInterval(typeLine._t);const paint=()=>{el.textContent=text};
+if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){paint();return}
+let i=0;el.textContent='';typeLine._t=setInterval(()=>{el.textContent=text.slice(0,++i);if(i>=text.length)clearInterval(typeLine._t)},45)}
+function showResult(t){const m=money(t.total_km);
+$('result').innerHTML=`<div class="log"><p class="log-kicker">冒險日誌</p><p class="type" id="typeLine"></p><div class="score"><div><div class="num">${esc(t.total_km)}</div><div class="lab">總里程 km</div></div><div><div class="num">${esc(t.freeway_km)}</div><div class="lab">國道 km</div></div></div><table><tr><th>路段</th><th>km</th><th>國道</th></tr>`+
 t.legs.map(l=>`<tr><td>${esc(l.from)} → ${esc(l.to)}</td><td>${l.km}</td><td>${l.freeway_km}</td></tr>`).join('')+
-`<tr><th>合計</th><th>${t.total_km}</th><th>${t.freeway_km}</th></tr></table>`+(m!=null?`<p>油資：<b>${m}</b> 元</p>`:'')+
-`<p class="sub">交流道/匝道 ${t.ramp_km} km ${S.settings.countRamps?'已':'未'}計入國道</p><button type="button" id="btnCopySum">複製報帳文字</button>`;
-$('btnCopySum').onclick=()=>copySum(t.id)}
+`<tr><th>合計</th><th>${esc(t.total_km)}</th><th>${esc(t.freeway_km)}</th></tr></table>`+(m!=null?`<p class="loot">油資 <b>${m}</b> 元</p>`:'')+
+`<p class="sub">交流道/匝道 ${esc(t.ramp_km)} km ${S.settings.countRamps?'已':'未'}計入國道</p><button type="button" id="btnCopySum">複製報帳文字</button></div>`;
+$('btnCopySum').onclick=()=>copySum(t.id);
+const names=(t.stops||[]).map(s=>s.name).filter(Boolean);
+typeLine($('typeLine'),names.length?names.join(' → '):(t.route||''))}
 async function copySum(id){const t=S.trips.find(x=>String(x.id)===String(id));if(!t)return;const text=summary(t);try{await navigator.clipboard.writeText(text);status('已複製')}catch(e){prompt('請手動複製',text)}}
 function render(){const c=S.current;$('tripIdle').hidden=!!c;$('tripActive').hidden=!c;
-$('stops').innerHTML=c?c.stops.map((s,i)=>`<li><b>${esc(s.name)}</b> <span class="sub">${s.time?new Date(s.time).toLocaleTimeString('zh-TW'):''} ${s.accuracy?'±'+s.accuracy+'m':''}<br>${esc(s.address||'')}</span><br>
+$('stops').innerHTML=c?(c.stops.length?c.stops.map((s,i)=>`<li class="arrival"><p class="kicker">抵達：${esc(s.name)}</p><span class="sub">${s.time?new Date(s.time).toLocaleTimeString('zh-TW'):''} ${s.accuracy?'±'+s.accuracy+'m':''}${s.address?'<br>'+esc(s.address):''}</span><div class="row">
 <button type="button" class="mini" data-a="ren" data-i="${i}">改名</button><button type="button" class="mini" data-a="up" data-i="${i}">↑</button><button type="button" class="mini" data-a="down" data-i="${i}">↓</button>
-<button type="button" class="mini" data-a="fav" data-i="${i}">存為常用</button><button type="button" class="mini danger" data-a="del" data-i="${i}">刪除</button></li>`).join(''):'';
-$('history').innerHTML=S.trips.map(t=>{const m=money(t.total_km);return `<li><b>${esc(t.date)}</b> ${esc(t.route)}<br>總 ${t.total_km} km／國道 ${t.freeway_km} km${m!=null?'／'+m+' 元':''}<br>
-<button type="button" class="mini" data-act="detail" data-h="${esc(t.id)}">明細</button><button type="button" class="mini" data-act="copy" data-h="${esc(t.id)}">複製</button><button type="button" class="mini danger" data-act="del" data-h="${esc(t.id)}">刪除</button></li>`}).join('')||'<li class="sub">尚無紀錄</li>';
-$('places').innerHTML=S.places.map((p,i)=>`<li>${esc(p.name)} <span class="sub">${p.lat.toFixed(4)},${p.lng.toFixed(4)}</span> <button type="button" class="mini danger" data-p="${i}">刪除</button></li>`).join('')||'<li class="sub">在行程中按「存為常用」新增（300 m 內自動套用名稱）</li>';
+<button type="button" class="mini" data-a="fav" data-i="${i}">存為常用</button><button type="button" class="mini danger" data-a="del" data-i="${i}">刪除</button></div></li>`).join(''):'<li class="sub">還沒有抵達紀錄</li>'):'';
+$('history').innerHTML=S.trips.map(t=>{const m=money(t.total_km);return `<li class="hist"><b>${esc(t.date)}</b> ${esc(t.route)}<br><span class="sub">總 ${t.total_km} km／國道 ${t.freeway_km} km${m!=null?'／'+m+' 元':''}</span><div class="row">
+<button type="button" class="mini" data-act="detail" data-h="${esc(t.id)}">明細</button><button type="button" class="mini" data-act="copy" data-h="${esc(t.id)}">複製</button><button type="button" class="mini danger" data-act="del" data-h="${esc(t.id)}">刪除</button></div></li>`}).join('')||'<li class="sub">尚無紀錄</li>';
+$('places').innerHTML=S.places.map((p,i)=>`<li class="place"><b>${esc(p.name)}</b> <span class="sub">${p.lat.toFixed(4)},${p.lng.toFixed(4)}</span> <button type="button" class="mini danger" data-p="${i}">刪除</button></li>`).join('')||'<li class="sub">在行程中按「存為常用」新增（300 m 內自動套用名稱）</li>';
 $('rate').value=S.settings.rate??'';$('countRamps').checked=!!S.settings.countRamps}
-$('stops').onclick=async e=>{const b=e.target.dataset;if(!b.a||!S.current)return;const st=S.current.stops,i=+b.i;if(!st[i])return;
+$('stops').onclick=async e=>{const btn=e.target.closest('button');if(!btn||!S.current)return;const b=btn.dataset;if(!b.a)return;const st=S.current.stops,i=+b.i;if(!st[i])return;
 if(b.a==='ren'){const n=prompt('名稱',st[i].name);if(n){st[i].name=n;st[i].renamed=true}}
 if(b.a==='del'&&confirm('刪除這個點？'))st.splice(i,1);
 if(b.a==='up'&&i>0)[st[i-1],st[i]]=[st[i],st[i-1]];
@@ -64,7 +70,7 @@ $('history').onclick=async e=>{const btn=e.target.closest('button');if(!btn||!$(
 if(act==='detail'){const t=S.trips.find(x=>String(x.id)===id);if(t)showResult(t)}
 if(act==='copy')copySum(id);
 if(act==='del'&&confirm('刪除此行程？')){S.trips=S.trips.filter(t=>String(t.id)!==id);await save();render()}};
-$('places').onclick=async e=>{const i=e.target.dataset.p;if(i!==undefined){S.places.splice(+i,1);await save();render()}};
+$('places').onclick=async e=>{const btn=e.target.closest('button');if(!btn||btn.dataset.p===undefined)return;S.places.splice(+btn.dataset.p,1);await save();render()};
 $('btnStart').onclick=async()=>{if(!lock())return;const pending=locate();try{S.current={stops:[]};$('result').innerHTML='';await save();render();status('定位中…');const p=await pending;await addStop(p);status(`已記錄（誤差約 ${p.accuracy} m）`)}catch(e){status(e.message)}finally{unlock()}};
 $('btnHere').onclick=recordHere;
 $('btnEnd').onclick=async()=>{if(!lock())return;const pending=locate();status('定位中…');try{await addStop(await pending);await calc()}catch(e){status(e.message)}finally{unlock()}};
@@ -73,7 +79,7 @@ $('btnCancel').onclick=async()=>{if(confirm('放棄目前行程？')){S.current=
 $('btnSearch').onclick=async()=>{const q=$('q').value.trim();if(!q)return;status('搜尋中…');
 try{const r=await nom(`search?q=${encodeURIComponent(q)}&countrycodes=tw&limit=5&addressdetails=1`);status(r.length?'':'找不到');
 $('results').innerHTML=r.map((x,i)=>`<li><button type="button" class="mini" data-r="${i}">加入</button> ${esc(x.display_name)}</li>`).join('');
-$('results').onclick=async e=>{const x=r[e.target.dataset.r];if(!x)return;$('results').innerHTML='';$('q').value='';
+$('results').onclick=async e=>{const btn=e.target.closest('button');if(!btn)return;const x=r[btn.dataset.r];if(!x)return;$('results').innerHTML='';$('q').value='';
 await addStop({lat:+x.lat,lng:+x.lon,name:shortName(x),address:x.display_name,time:new Date().toISOString(),manual:true})}}catch(e){status(e.message)}};
 $('rate').onchange=e=>{S.settings.rate=e.target.value;save();render()};
 $('countRamps').onchange=e=>{S.settings.countRamps=e.target.checked;save()};

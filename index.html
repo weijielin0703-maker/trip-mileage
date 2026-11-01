@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1565c0">
+<meta name="theme-color" content="#1d4a24">
+<meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -11,27 +12,73 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="preload" href="./fonts/Cubic_11.woff2" as="font" type="font/woff2" crossorigin>
 <title>出差里程</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<header><h1>出差里程 / 油資</h1></header>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+  <symbol id="i-pin" viewBox="0 0 16 16">
+    <rect x="6" y="1" width="4" height="1" fill="currentColor"/>
+    <rect x="4" y="2" width="8" height="1" fill="currentColor"/>
+    <rect x="3" y="3" width="3" height="3" fill="currentColor"/>
+    <rect x="10" y="3" width="3" height="3" fill="currentColor"/>
+    <rect x="6" y="3" width="4" height="1" fill="currentColor"/>
+    <rect x="6" y="5" width="4" height="1" fill="currentColor"/>
+    <rect x="4" y="6" width="8" height="1" fill="currentColor"/>
+    <rect x="5" y="7" width="6" height="1" fill="currentColor"/>
+    <rect x="6" y="8" width="4" height="1" fill="currentColor"/>
+    <rect x="7" y="9" width="2" height="4" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-house" viewBox="0 0 16 16">
+    <rect x="7" y="1" width="2" height="1" fill="currentColor"/>
+    <rect x="5" y="2" width="6" height="1" fill="currentColor"/>
+    <rect x="3" y="3" width="10" height="1" fill="currentColor"/>
+    <rect x="2" y="4" width="12" height="2" fill="currentColor"/>
+    <rect x="3" y="6" width="10" height="1" fill="currentColor"/>
+    <rect x="3" y="7" width="3" height="5" fill="currentColor"/>
+    <rect x="10" y="7" width="3" height="5" fill="currentColor"/>
+    <rect x="6" y="9" width="4" height="3" fill="currentColor"/>
+    <rect x="3" y="12" width="10" height="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-flag" viewBox="0 0 16 16">
+    <rect x="3" y="1" width="2" height="14" fill="currentColor"/>
+    <rect x="5" y="2" width="8" height="1" fill="currentColor"/>
+    <rect x="5" y="3" width="7" height="1" fill="currentColor"/>
+    <rect x="5" y="4" width="6" height="1" fill="currentColor"/>
+    <rect x="5" y="5" width="5" height="1" fill="currentColor"/>
+    <rect x="5" y="6" width="4" height="1" fill="currentColor"/>
+    <rect x="5" y="7" width="3" height="1" fill="currentColor"/>
+    <rect x="5" y="8" width="2" height="1" fill="currentColor"/>
+  </symbol>
+</svg>
+<header>
+  <img class="badge" src="./icon.svg" alt="" width="64" height="64">
+  <div>
+    <p class="brand-kicker">旅途紀錄</p>
+    <h1>出差里程</h1>
+  </div>
+</header>
 <main>
-<section id="trip">
-<div id="tripIdle"><button type="button" id="btnStart" class="big">開始行程</button></div>
+<section class="win" id="trip">
+<h2><span>旅程</span></h2>
+<div id="tripIdle">
+  <p class="flavor">今天要去哪裡？</p>
+  <button type="button" id="btnStart" class="big gold"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-flag" xlink:href="#i-flag"/></svg>開始行程</button>
+</div>
 <div id="tripActive" hidden>
- <button type="button" id="btnHere" class="big">📍 記錄這裡</button>
- <div class="row"><input id="q" placeholder="忘了定位？輸入地址搜尋"><button type="button" id="btnSearch">搜尋</button></div>
+ <button type="button" id="btnHere" class="big blue"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-pin" xlink:href="#i-pin"/></svg>記錄這裡</button>
+ <div class="row"><input id="q" placeholder="忘了定位？輸入地址搜尋" autocomplete="off"><button type="button" id="btnSearch">搜尋</button></div>
  <ul id="results"></ul>
  <ol id="stops"></ol>
- <button type="button" id="btnEnd" class="big green">🏠 結束並計算（記錄目前位置）</button>
+ <button type="button" id="btnEnd" class="big green"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-house" xlink:href="#i-house"/></svg>結束並計算（記錄目前位置）</button>
  <div class="row"><button type="button" id="btnCalc">只計算（不加點）</button><button type="button" id="btnCancel" class="danger">放棄行程</button></div>
 </div>
 <div id="status"></div>
 <div id="result"></div>
 </section>
-<section>
-<h2>歷史紀錄</h2>
+<section class="win">
+<h2><span>歷史紀錄</span></h2>
 <div class="row">
  <button type="button" id="btnCsv">匯出 CSV</button>
  <button type="button" id="btnJson">匯出 JSON</button>
@@ -39,16 +86,16 @@
 </div>
 <ul id="history"></ul>
 </section>
-<section>
-<h2>常用地點</h2>
+<section class="win">
+<h2><span>常用地點</span></h2>
 <ul id="places"></ul>
 </section>
-<section>
-<h2>設定</h2>
+<section class="win">
+<h2><span>設定</span></h2>
 <label>每公里油資（元，可空白）<input id="rate" type="number" step="0.01" inputmode="decimal"></label>
-<label><input id="countRamps" type="checkbox"> 交流道/匝道計入國道公里</label>
+<label class="check"><input id="countRamps" type="checkbox"> 交流道/匝道計入國道公里</label>
 </section>
-<p class="sub">總里程與國道里程由 OSRM 依 OpenStreetMap 路網計算，不是直線距離。資料只存在這台裝置。</p>
+<p class="fineprint">總里程與國道里程由 OSRM 依 OpenStreetMap 路網計算，不是直線距離。資料只存在這台裝置。</p>
 </main>
 <script src="./routing.js"></script>
 <script src="./app.js"></script>

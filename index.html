@@ -3,16 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1d4a24">
+<meta name="theme-color" content="#e7fdff">
 <meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="出差里程">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-180.png">
-<link rel="preload" href="./fonts/Cubic_11.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <title>出差里程</title>
 <link rel="stylesheet" href="./style.css">
 </head>
@@ -53,9 +55,9 @@
   </symbol>
 </svg>
 <header>
-  <img class="badge" src="./icon.svg" alt="" width="64" height="64">
+  <img class="badge" src="./icon.svg" alt="" width="56" height="56">
   <div>
-    <p class="brand-kicker">旅途紀錄</p>
+    <p class="brand-kicker">MILEAGE LINK</p>
     <h1>出差里程</h1>
   </div>
 </header>
@@ -67,24 +69,28 @@
   <button type="button" id="btnStart" class="big gold"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-flag" xlink:href="#i-flag"/></svg>開始行程</button>
 </div>
 <div id="tripActive" hidden>
- <button type="button" id="btnHere" class="big blue"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-pin" xlink:href="#i-pin"/></svg>記錄這裡</button>
+ <button type="button" id="btnHere" class="big cyan"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-pin" xlink:href="#i-pin"/></svg>記錄這裡</button>
  <div class="row"><input id="q" placeholder="忘了定位？輸入地址搜尋" autocomplete="off"><button type="button" id="btnSearch">搜尋</button></div>
  <ul id="results"></ul>
  <ol id="stops"></ol>
- <button type="button" id="btnEnd" class="big green"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-house" xlink:href="#i-house"/></svg>結束並計算（記錄目前位置）</button>
+ <div class="fields" id="liveFields">
+  <label>公出日期<input id="fDate" type="date" data-k="date"></label>
+  <label>時間<select id="fTime" data-k="time"></select></label>
+  <label>洽公對象<input id="fClient" type="text" data-k="client" autocomplete="off" placeholder="洽公對象"></label>
+  <label>事由<input id="fReason" type="text" data-k="reason" autocomplete="off" placeholder="事由"></label>
+  <label>停車費<input id="fPark" type="number" data-k="parking" inputmode="decimal" step="1" placeholder="空白為 0"></label>
+ </div>
+ <button type="button" id="btnEnd" class="big mag"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-house" xlink:href="#i-house"/></svg>結束並計算（記錄目前位置）</button>
  <div class="row"><button type="button" id="btnCalc">只計算（不加點）</button><button type="button" id="btnCancel" class="danger">放棄行程</button></div>
 </div>
 <div id="status"></div>
 <div id="result"></div>
 </section>
-<section class="win">
-<h2><span>歷史紀錄</span></h2>
-<div class="row">
- <button type="button" id="btnCsv">匯出 CSV</button>
- <button type="button" id="btnJson">匯出 JSON</button>
- <label class="btn">匯入 JSON<input type="file" id="fileImport" accept=".json,application/json" hidden></label>
-</div>
-<ul id="history"></ul>
+<section class="win" id="pendingBox">
+<h2><span>待報帳行程</span></h2>
+<ul id="pending"></ul>
+<button type="button" id="btnXls" class="big gold">匯出公司報帳表 (.xls)</button>
+<button type="button" id="btnClear" class="danger" hidden>匯出後清空</button>
 </section>
 <section class="win">
 <h2><span>常用地點</span></h2>
@@ -92,12 +98,16 @@
 </section>
 <section class="win">
 <h2><span>設定</span></h2>
-<label>每公里油資（元，可空白）<input id="rate" type="number" step="0.01" inputmode="decimal"></label>
-<label class="check"><input id="countRamps" type="checkbox"> 交流道/匝道計入國道公里</label>
+<label>受款人<input id="setPayee" type="text" autocomplete="name"></label>
+<label>工號<input id="setEmp" type="text" inputmode="numeric" autocomplete="off"></label>
+<label>車號<input id="setCar" type="text" autocomplete="off"></label>
+<label>油品<select id="setFuel"><option>92</option><option>95</option><option>98</option></select></label>
+<p class="fixedmeta" id="fixedMeta"></p>
 </section>
-<p class="fineprint">總里程與國道里程由 OSRM 依 OpenStreetMap 路網計算，不是直線距離。資料只存在這台裝置。</p>
+<p class="fineprint">總里程來自 OSRM／OpenStreetMap，不是直線距離。行走里程是國道加上交流道、匝道，四捨五入成整數後寫進報帳表。資料只存在這台裝置。</p>
 </main>
 <script src="./routing.js"></script>
+<script src="./expense-sheet.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>

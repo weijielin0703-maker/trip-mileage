@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1565c0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="出差里程">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<title>出差里程</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header><h1>出差里程 / 油資</h1></header>
+<main>
+<section id="trip">
+<div id="tripIdle"><button type="button" id="btnStart" class="big">開始行程</button></div>
+<div id="tripActive" hidden>
+ <button type="button" id="btnHere" class="big">📍 記錄這裡</button>
+ <div class="row"><input id="q" placeholder="忘了定位？輸入地址搜尋"><button type="button" id="btnSearch">搜尋</button></div>
+ <ul id="results"></ul>
+ <ol id="stops"></ol>
+ <button type="button" id="btnEnd" class="big green">🏠 結束並計算（記錄目前位置）</button>
+ <div class="row"><button type="button" id="btnCalc">只計算（不加點）</button><button type="button" id="btnCancel" class="danger">放棄行程</button></div>
+</div>
+<div id="status"></div>
+<div id="result"></div>
+</section>
+<section>
+<h2>歷史紀錄</h2>
+<div class="row">
+ <button type="button" id="btnCsv">匯出 CSV</button>
+ <button type="button" id="btnJson">匯出 JSON</button>
+ <label class="btn">匯入 JSON<input type="file" id="fileImport" accept=".json,application/json" hidden></label>
+</div>
+<ul id="history"></ul>
+</section>
+<section>
+<h2>常用地點</h2>
+<ul id="places"></ul>
+</section>
+<section>
+<h2>設定</h2>
+<label>每公里油資（元，可空白）<input id="rate" type="number" step="0.01" inputmode="decimal"></label>
+<label><input id="countRamps" type="checkbox"> 交流道/匝道計入國道公里</label>
+</section>
+<p class="sub">總里程與國道里程由 OSRM 依 OpenStreetMap 路網計算，不是直線距離。資料只存在這台裝置。</p>
+</main>
+<script src="./routing.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

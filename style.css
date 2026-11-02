@@ -221,9 +221,41 @@ th{color:var(--cyan);font-weight:700}
 #results li{padding:6px 0}
 .roads td .sub{display:block}
 #backupBox .row>button{flex:1}
-.card{padding:12px 0;border-top:1px solid rgba(62,240,255,.22)}
+.card{border-top:1px solid rgba(62,240,255,.22)}
 .card:first-child{border-top:0}
-.card h3{margin:0 0 4px;font-size:1rem}
+#pendingSum{margin:-4px 0 6px}
+#pendingSum:empty{display:none}
+.card summary{
+  position:relative;
+  display:block;
+  list-style:none;
+  padding:10px 26px 10px 0;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.card summary::-webkit-details-marker{display:none}
+.card summary::after{
+  content:"";
+  position:absolute;
+  right:6px;
+  top:50%;
+  width:8px;
+  height:8px;
+  border-right:2px solid var(--cyan);
+  border-bottom:2px solid var(--cyan);
+  transform:translateY(-70%) rotate(45deg);
+  transition:transform .15s;
+}
+.card details[open] summary::after{transform:translateY(-30%) rotate(-135deg)}
+.sum-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sum-date{font-weight:700;white-space:nowrap}
+.sum-km{white-space:nowrap;font-size:.9rem}
+.sum-km b{font-family:Rajdhani,sans-serif;font-size:1.15rem;color:var(--cyan)}
+.sum-route,.sum-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-route{font-size:.92rem;margin-top:2px}
+.sum-miss{font-size:.85rem;margin-top:2px}
+.card-body{padding:0 0 12px}
+.card-body .hint{margin:2px 0 0}
 .place{padding:8px 0;border-top:1px dashed rgba(62,240,255,.28)}
 .fixedmeta{margin:10px 0 0;color:var(--muted);font-size:.85rem;line-height:1.5}
 .fineprint{margin:0;color:#c5d7e6;font-size:.85rem}

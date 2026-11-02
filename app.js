@@ -105,17 +105,36 @@ $('stops').innerHTML=c?(c.stops.length?c.stops.map((s,i)=>`<li class="arrival"><
 <button type="button" class="mini" data-a="up" data-i="${i}">↑</button><button type="button" class="mini" data-a="down" data-i="${i}">↓</button>
 <button type="button" class="mini" data-a="fav" data-i="${i}">存為常用</button><button type="button" class="mini danger" data-a="del" data-i="${i}">刪除</button></div></li>`).join(''):'<li class="sub">還沒有抵達紀錄。點名稱可改名。</li>'):'';
 if(c)fillLiveForm();
-$('pending').innerHTML=S.trips.length?S.trips.map(t=>{const f=formOf(t);return `<li class="card" data-trip="${esc(t.id)}"><h3>${esc(f.date)} ${esc(timeLabel(f.time))}</h3><div>${esc(t.route||ExpenseSheet.placeText(t.stops))}</div><span class="sub">總里程 ${esc(t.total_km)} km／行走里程 ${walkOf(t)} km${f.client?'／'+esc(f.client):''}</span><div class="row stops-edit">`+
-(t.stops||[]).map((s,i)=>`<button type="button" class="mini" data-act="renstop" data-id="${esc(t.id)}" data-i="${i}">${esc(s.name)}</button>`).join('')+
-`</div>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${esc(t.id)}">明細</button><button type="button" class="mini" data-act="recalc" data-id="${esc(t.id)}">重新計算</button><button type="button" class="mini danger" data-act="del" data-id="${esc(t.id)}">刪除</button></div></li>`}).join(''):'<li class="sub">還沒有待報帳的行程</li>';
+renderPending();
 $('places').innerHTML=S.places.map((p,i)=>`<li class="place"><b>${esc(p.name)}</b> <span class="sub">${p.lat.toFixed(4)},${p.lng.toFixed(4)}</span> <button type="button" class="mini danger" data-p="${i}">刪除</button></li>`).join('')||'<li class="sub">在行程中按「存為常用」新增（300 m 內自動套用名稱）</li>';
 const p=profile();S.settings.profile=p;
 fillIfIdle($('setPayee'),p.payee);fillIfIdle($('setEmp'),p.empId);fillIfIdle($('setCar'),p.carNo);fillIfIdle($('setFuel'),p.fuel);
 const F=ExpenseSheet.FIXED;
 $('fixedMeta').textContent=`公司 ${F.company}　廠區 ${F.plant}　${F.division}　${F.dept}　${F.deptCode}`;renderSetup();renderBackup()}
-function renderSetup(){const miss=ExpenseSheet.missingProfile(S.settings.profile);$('setupBox').hidden=!miss.length;$('setupMissing').textContent=miss.join('、');return miss}
+// Pending trips: one compact line each (newest date first); tap to open the editable fields.
+const openTrips=new Set();
+const WEEK='日一二三四五六';
+function shortDate(iso){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');if(!m)return esc(iso||'未填日期');const d=new Date(+m[1],m[2]-1,+m[3]);
+return (+m[1]!==new Date().getFullYear()?m[1]+'/':'')+m[2]+'/'+m[3]+'（'+WEEK[d.getDay()]+'）'}
+function missingFields(f){return [!f.client&&'洽公對象',!f.reason&&'事由'].filter(Boolean)}
+function tripSummary(t){const f=formOf(t),miss=missingFields(f),route=(t.stops||[]).map(s=>s&&s.name).filter(Boolean);
+return `<div class="sum-top"><span class="sum-date">${shortDate(f.date)}<span class="sub"> ${esc(timeLabel(f.time))}</span></span><span class="sum-km"><b>${ExpenseSheet.intText(t.total_km)}</b> km<span class="sub">　行走 </span><b>${walkOf(t)}</b></span></div>
+<div class="sum-route">${route.map(esc).join(' → ')||esc(t.route)}</div>`+
+(miss.length?`<div class="sum-miss warn">待填：${miss.join('、')}</div>`:f.client?`<div class="sum-meta sub">${esc(f.client)}・${esc(f.reason)}</div>`:'')}
+function renderPending(){const id=t=>esc(t.id);
+$('pending').querySelectorAll('details[data-id]').forEach(d=>{if(d.open)openTrips.add(d.dataset.id);else openTrips.delete(d.dataset.id)});
+const list=S.trips.slice().sort((a,b)=>String(formOf(b).date).localeCompare(String(formOf(a).date))||String(formOf(b).time).localeCompare(String(formOf(a).time))||b.id-a.id);
+renderPendingSum();
+$('pending').innerHTML=list.length?list.map(t=>`<li class="card" data-card="${id(t)}"><details data-id="${id(t)}"${openTrips.has(String(t.id))?' open':''}><summary>${tripSummary(t)}</summary><div class="card-body">
+<p class="hint">TAP STOP · 點站名改名</p><div class="row stops-edit">`+
+(t.stops||[]).map((s,i)=>`<button type="button" class="mini" data-act="renstop" data-id="${id(t)}" data-i="${i}">${esc(s.name)}</button>`).join('')+
+`</div>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${id(t)}">地圖與明細</button><button type="button" class="mini" data-act="recalc" data-id="${id(t)}">重新計算</button><button type="button" class="mini danger" data-act="del" data-id="${id(t)}">刪除</button></div></div></details></li>`).join(''):'<li class="sub">還沒有待報帳的行程</li>'}
+// Keeps the closed line in step while fields are edited, without re-sorting under the finger.
+function refreshSummary(trip){const sum=document.querySelector(`#pending [data-card="${CSS.escape(String(trip.id))}"] summary`);if(sum)sum.innerHTML=tripSummary(trip);renderPendingSum()}
+function renderPendingSum(){const list=S.trips,todo=list.filter(t=>missingFields(formOf(t)).length).length,total=list.reduce((n,t)=>n+Number(ExpenseSheet.intText(t.total_km)),0),walk=list.reduce((n,t)=>n+walkOf(t),0);
+$('pendingSum').innerHTML=list.length?`${list.length} 筆・總里程 ${total} km・行走 ${walk} km`+(todo?`<span class="warn">・${todo} 筆待填</span>`:''):''}function renderSetup(){const miss=ExpenseSheet.missingProfile(S.settings.profile);$('setupBox').hidden=!miss.length;$('setupMissing').textContent=miss.join('、');return miss}
 const PROFILE_INPUTS={受款人:'setPayee',工號:'setEmp',車號:'setCar'};
-function goSetup(){const miss=renderSetup();$('settingsBox').scrollIntoView({behavior:'smooth',block:'start'});const el=$(PROFILE_INPUTS[miss[0]]);if(el)setTimeout(()=>el.focus({preventScroll:true}),350)}
+function goSetup(){const miss=renderSetup();$('settingsBox').scrollIntoView({block:'start'});const el=$(PROFILE_INPUTS[miss[0]]);if(el)setTimeout(()=>el.focus({preventScroll:true}),350)}
 function readProfile(){S.settings.profile=ExpenseSheet.profileOf({payee:$('setPayee').value,empId:$('setEmp').value,carNo:$('setCar').value,fuel:$('setFuel').value});save();renderSetup()}
 function onField(e){const el=e.target;if(!el.dataset||!el.dataset.k)return;const box=el.closest('[data-trip]');
 if(!box){readLiveForm();save();return}
@@ -128,7 +147,8 @@ trip.form[key]=value;
 if(key==='date')trip.date=value;
 if((key==='client'||key==='reason')&&el.value!==value)el.value=value;
 save();
-document.querySelectorAll(`[data-trip="${CSS.escape(String(trip.id))}"] [data-k="${CSS.escape(el.dataset.k)}"]`).forEach(other=>{if(other!==el&&document.activeElement!==other)other.value=el.value})}
+document.querySelectorAll(`[data-trip="${CSS.escape(String(trip.id))}"] [data-k="${CSS.escape(el.dataset.k)}"]`).forEach(other=>{if(other!==el&&document.activeElement!==other)other.value=el.value});
+refreshSummary(trip)}
 $('liveFields').addEventListener('input',onField);
 $('liveFields').addEventListener('change',onField);
 $('result').addEventListener('input',onField);
@@ -144,7 +164,7 @@ if(b.a==='fav'){const n=clean(prompt('常用地點名稱',st[i].name)||'');if(n)
 await save();render()};
 $('pending').onclick=async e=>{const btn=e.target.closest('button');if(!btn||!$('pending').contains(btn))return;const id=btn.dataset.id,act=btn.dataset.act;if(!act)return;
 const trip=S.trips.find(t=>String(t.id)===id);if(!trip)return;
-if(act==='detail')showResult(trip);
+if(act==='detail'){showResult(trip);$('result').scrollIntoView({block:'start'})}
 if(act==='recalc')await recalc(trip);
 if(act==='renstop'){const i=+btn.dataset.i;const n=clean(prompt('停靠點名稱',trip.stops[i]&&trip.stops[i].name)||'');if(n&&trip.stops[i]){trip.stops[i].name=n;trip.stops[i].renamed=true;trip.route=ExpenseSheet.placeText(trip.stops);await save();render();if($('result').querySelector(`[data-trip="${CSS.escape(id)}"]`))showResult(trip)}}
 if(act==='del'&&confirm('刪除此待報帳行程？')){S.trips=S.trips.filter(t=>String(t.id)!==id);if($('result').querySelector(`[data-trip="${CSS.escape(id)}"]`))$('result').innerHTML='';await save();render()}};

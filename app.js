@@ -180,12 +180,53 @@ for(let i=0;i<vs.length;i++){if(i)status('換個寫法再找…（'+(i+1)+'/'+vs
 const r=await nom('search?'+new URLSearchParams(vs[i].params)+'&countrycodes=tw&limit=5&addressdetails=1');
 if(r.length)return{hits:r,exact:Geocode.isExact(vs[i],r[0])}}
 return{hits:[],exact:false}}
-$('btnSearch').onclick=async()=>{const q=$('q').value.trim();if(!q)return;status('搜尋中…');$('results').innerHTML='';
-try{const {hits:r,exact}=await searchAddress(q);status(r.length?'':'找不到，試試只打路名或地標');
-$('results').innerHTML=(r.length&&!exact?'<li class="sub warn">地圖資料裡沒有這個門牌，以下是路段的位置，可能和實際地點有段距離。</li>':'')+
-r.map((x,i)=>`<li><button type="button" class="mini" data-r="${i}">加入</button> ${esc(x.display_name)}</li>`).join('');
-$('results').onclick=async e=>{const btn=e.target.closest('button');if(!btn)return;const x=r[btn.dataset.r];if(!x)return;$('results').innerHTML='';$('q').value='';
-await addStop({lat:+x.lat,lng:+x.lon,name:exact?shortName(x):clean(Geocode.normalize(q).replace(/(\d+樓.*|\d+F.*)$/i,'')),address:x.display_name,time:new Date().toISOString(),manual:true,approx:!exact||undefined})}}catch(e){status(e.message)}};
+// Search order: pasted coordinates, then saved places (instant), then OpenStreetMap.
+// Each result row carries the stop it would add, so one click handler serves them all.
+let searchItems=[],searchQuery='',searchTrusted=false;
+function showResults(items,note){searchItems=items;
+$('results').innerHTML=(note?`<li class="sub warn">${note}</li>`:'')+items.map((it,i)=>`<li><button type="button" class="mini" data-r="${i}">加入</button> ${it.label}</li>`).join('')+
+(searchQuery?`<li class="sub">都不對？<button type="button" class="mini" data-pick="1">在地圖上選點</button></li>`:'')}
+$('results').onclick=async e=>{const btn=e.target.closest('button');if(!btn)return;
+if(btn.dataset.pick)return openPicker();
+const it=searchItems[btn.dataset.r];if(!it)return;$('results').innerHTML='';$('q').value='';searchQuery='';
+await addStop(Object.assign({time:new Date().toISOString(),manual:true},it.stop))};
+$('btnSearch').onclick=async()=>{const q=$('q').value.trim();if(!q)return;searchQuery=q;$('results').innerHTML='';
+const c=Geocode.coords(q);
+if(c){status('');searchTrusted=true;if(pickView){pickView.setView([c.lat,c.lng],17);pickPin.setLatLng([c.lat,c.lng])}return showResults([{label:`座標 ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}（加入後會自動查地址）`,stop:{lat:c.lat,lng:c.lng,name:'座標點'}}])}
+const mine=S.places.filter(p=>Geocode.nameMatches(q,p.name)).map(p=>({label:`<b>${esc(p.name)}</b> <span class="sub">常用地點</span>`,stop:{lat:p.lat,lng:p.lng,name:p.name,renamed:true}}));
+searchTrusted=mine.length>0;if(mine.length)showResults(mine);
+status('搜尋中…');
+try{const {hits:r,exact}=await searchAddress(q);if(searchQuery!==q)return;
+const isAddr=!!Geocode.parse(q);
+const named=isAddr||r.some(x=>Geocode.nameMatches(q,x.name)||Geocode.nameMatches(q,x.display_name));
+const osm=r.map(x=>({label:esc(x.display_name),stop:{lat:+x.lat,lng:+x.lon,name:isAddr&&!exact?clean(Geocode.normalize(q).replace(/(\d+樓.*|\d+F.*)$/i,'')):shortName(x),address:x.display_name,approx:isAddr&&!exact||undefined}}));
+let note='',shown=mine.concat(osm);
+if(!named&&mine.length)shown=mine; // a saved place beats look-alike names
+else if(!r.length)note='地圖資料裡找不到。可以改打路名，或在地圖上選點。';
+else if(isAddr&&!exact)note='地圖資料裡沒有這個門牌，以下是路段的位置，可能和實際地點有段距離。';
+else if(!named)note=`地圖資料裡沒有叫「${esc(q)}」的地點，以下只是名稱相近的結果。小店家、停車場常常沒有收錄，請在地圖上選點。`;
+searchTrusted=!!(mine.length||named&&osm.length);
+status('');showResults(shown,note);
+const go=mine[0]||named&&osm[0];if(pickView&&go){const at=[go.stop.lat,go.stop.lng];pickView.setView(at,17);pickPin.setLatLng(at)}}catch(e){status(e.message)}};
+// Map picker for places OpenStreetMap does not know. Centers on the first search hit, else the last stop.
+let pickView=null,pickPin=null;
+async function openPicker(){let L;try{L=await loadLeaflet()}catch(e){return status(e.message)}
+$('picker').hidden=false;$('results').innerHTML='';
+const st=S.current&&S.current.stops||[],last=st[st.length-1],first=searchTrusted?searchItems.find(it=>it.stop&&!it.stop.approx)||searchItems[0]:null;
+const at=first?[first.stop.lat,first.stop.lng]:last?[last.lat,last.lng]:[25.0418,121.5435];
+if(pickView){pickView.remove();pickView=null}
+pickView=L.map($('pickMap'),{scrollWheelZoom:false}).setView(at,first||last?17:12);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(pickView);
+pickPin=L.marker(at,{draggable:true,icon:L.divIcon({className:'pick-pin',html:'<span></span>',iconSize:[28,28],iconAnchor:[14,28]})}).addTo(pickView);
+pickView.on('click',e=>pickPin.setLatLng(e.latlng));
+$('picker').scrollIntoView({block:'start'})}
+function closePicker(){$('picker').hidden=true;if(pickView){pickView.remove();pickView=null}}
+$('btnPick').onclick=openPicker;
+$('btnPickCancel').onclick=closePicker;
+$('btnPickAdd').onclick=async()=>{if(!pickPin)return;const p=pickPin.getLatLng(),q=searchQuery&&!Geocode.coords(searchQuery)&&!Geocode.parse(searchQuery)?clean(searchQuery):'';
+closePicker();$('q').value='';searchQuery='';
+await addStop({lat:+p.lat.toFixed(6),lng:+p.lng.toFixed(6),name:q||'地圖選點',renamed:!!q||undefined,time:new Date().toISOString(),manual:true});
+status(q?`已加入「${q}」。按「存為常用」之後搜尋就找得到。`:'已加入。點名稱可以改名，按「存為常用」之後搜尋就找得到。')};
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('btnSearch').click()}});
 ['setPayee','setEmp','setCar','setFuel'].forEach(id=>{$(id).addEventListener('input',readProfile);$(id).addEventListener('change',()=>{readProfile();render()})});
 $('btnSetup').onclick=goSetup;

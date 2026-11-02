@@ -45,7 +45,21 @@
     if (!v.params.street && !/\d/.test(v.params.q || '')) return true;
     return !!(hit && hit.address && hit.address.house_number) || !['road', 'primary', 'secondary', 'tertiary', 'residential', 'trunk', 'unclassified'].includes(hit && hit.addresstype);
   }
-  const api = { normalize, parse, variants, isExact };
+  // Coordinates typed or pasted ("25.0339, 121.5645") or inside a Google Maps link (@lat,lng / q=lat,lng / !3dlat!4dlng).
+  function coords(q) {
+    const s = String(q || '').replace(/%2C/gi, ',');
+    const m = s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+      s.match(/[?&](?:q|query|ll|destination|center)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/) ||
+      s.match(/^\s*\(?(-?\d{1,3}\.\d+)\s*[,，\s]\s*(-?\d{1,3}\.\d+)\)?\s*$/);
+    if (!m) return null;
+    let lat = +m[1], lng = +m[2];
+    if (Math.abs(lat) > 90 && Math.abs(lng) <= 90) [lat, lng] = [lng, lat];
+    return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+  }
+  // Loose name comparison: no spaces, 台 = 臺, case-insensitive.
+  function key(s) { return String(s || '').replace(/[\s　]+/g, '').replace(/臺/g, '台').toLowerCase(); }
+  function nameMatches(q, text) { const k = key(q); return !!k && key(text).includes(k); }
+  const api = { normalize, parse, variants, isExact, coords, nameMatches };
   root.Geocode = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(this);

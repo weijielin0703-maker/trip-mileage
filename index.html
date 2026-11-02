@@ -76,8 +76,13 @@
 </div>
 <div id="tripActive" hidden>
  <button type="button" id="btnHere" class="big cyan"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-pin" xlink:href="#i-pin"/></svg>記錄這裡</button>
- <div class="row"><input id="q" placeholder="忘了定位？輸入地址搜尋" autocomplete="off"><button type="button" id="btnSearch">搜尋</button></div>
+ <div class="row"><input id="q" placeholder="地址、地標、常用地點或座標" autocomplete="off" enterkeyhint="search"><button type="button" id="btnSearch">搜尋</button><button type="button" id="btnPick">地圖選點</button></div>
  <ul id="results"></ul>
+ <div id="picker" hidden>
+  <p class="sub">點地圖或拖曳圖釘到正確位置。可以先搜尋附近的路名，地圖會移到那裡。</p>
+  <div class="map pickmap" id="pickMap"></div>
+  <div class="row"><button type="button" id="btnPickAdd" class="cyan">加入這個點</button><button type="button" id="btnPickCancel">取消</button></div>
+ </div>
  <ol id="stops"></ol>
  <div class="fields" id="liveFields">
   <label>公出日期<input id="fDate" type="date" data-k="date"></label>

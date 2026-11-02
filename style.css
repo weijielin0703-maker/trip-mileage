@@ -218,6 +218,19 @@ th{color:var(--cyan);font-weight:700}
 .map .leaflet-control-attribution{font-size:10px}
 #mapNote:empty{display:none}
 .warn{color:#ffd166}
+.pickmap{height:320px}
+#picker .row>button{flex:1}
+.pick-pin span{
+  display:block;
+  width:22px;
+  height:22px;
+  margin:0 3px;
+  border-radius:50% 50% 50% 0;
+  background:var(--mag);
+  border:3px solid #fff;
+  transform:rotate(-45deg);
+  box-shadow:0 2px 8px rgba(0,0,0,.5);
+}
 #results li{padding:6px 0}
 .roads td .sub{display:block}
 #backupBox .row>button{flex:1}

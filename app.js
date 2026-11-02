@@ -78,8 +78,11 @@ $('places').innerHTML=S.places.map((p,i)=>`<li class="place"><b>${esc(p.name)}</
 const p=profile();S.settings.profile=p;
 fillIfIdle($('setPayee'),p.payee);fillIfIdle($('setEmp'),p.empId);fillIfIdle($('setCar'),p.carNo);fillIfIdle($('setFuel'),p.fuel);
 const F=ExpenseSheet.FIXED;
-$('fixedMeta').textContent=`公司 ${F.company}　廠區 ${F.plant}　${F.division}　${F.dept}　${F.deptCode}`}
-function readProfile(){S.settings.profile=ExpenseSheet.profileOf({payee:$('setPayee').value,empId:$('setEmp').value,carNo:$('setCar').value,fuel:$('setFuel').value});save()}
+$('fixedMeta').textContent=`公司 ${F.company}　廠區 ${F.plant}　${F.division}　${F.dept}　${F.deptCode}`;renderSetup()}
+function renderSetup(){const miss=ExpenseSheet.missingProfile(S.settings.profile);$('setupBox').hidden=!miss.length;$('setupMissing').textContent=miss.join('、');return miss}
+const PROFILE_INPUTS={受款人:'setPayee',工號:'setEmp',車號:'setCar'};
+function goSetup(){const miss=renderSetup();$('settingsBox').scrollIntoView({behavior:'smooth',block:'start'});const el=$(PROFILE_INPUTS[miss[0]]);if(el)setTimeout(()=>el.focus({preventScroll:true}),350)}
+function readProfile(){S.settings.profile=ExpenseSheet.profileOf({payee:$('setPayee').value,empId:$('setEmp').value,carNo:$('setCar').value,fuel:$('setFuel').value});save();renderSetup()}
 function onField(e){const el=e.target;if(!el.dataset||!el.dataset.k)return;const box=el.closest('[data-trip]');
 if(!box){readLiveForm();save();return}
 const trip=S.trips.find(t=>String(t.id)===box.dataset.trip);if(!trip)return;
@@ -121,13 +124,16 @@ try{const r=await nom(`search?q=${encodeURIComponent(q)}&countrycodes=tw&limit=5
 $('results').innerHTML=r.map((x,i)=>`<li><button type="button" class="mini" data-r="${i}">加入</button> ${esc(x.display_name)}</li>`).join('');
 $('results').onclick=async e=>{const btn=e.target.closest('button');if(!btn)return;const x=r[btn.dataset.r];if(!x)return;$('results').innerHTML='';$('q').value='';
 await addStop({lat:+x.lat,lng:+x.lon,name:shortName(x),address:x.display_name,time:new Date().toISOString(),manual:true})}}catch(e){status(e.message)}};
-['setPayee','setEmp','setCar','setFuel'].forEach(id=>$(id).addEventListener('change',()=>{readProfile();render()}));
+['setPayee','setEmp','setCar','setFuel'].forEach(id=>{$(id).addEventListener('input',readProfile);$(id).addEventListener('change',()=>{readProfile();render()})});
+$('btnSetup').onclick=goSetup;
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
 async function shareBlob(name,blob){const file=new File([blob],name,{type:blob.type||'application/vnd.ms-excel'});
 if(isIOS()&&navigator.share){try{if(!navigator.canShare||navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return 'shared'}}catch(e){if(e&&e.name==='AbortError')return 'abort'}}
 const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);return 'downloaded'}
 function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);return new Promise((ok,no)=>{const s=document.createElement('script');s.src='./vendor/xlsx.full.min.js';s.onload=()=>window.XLSX?ok(window.XLSX):no(new Error('報帳元件載入失敗'));s.onerror=()=>no(new Error('報帳元件載入失敗'));document.head.appendChild(s)})}
-async function exportXls(){if(!S.trips.length)return status('沒有待報帳行程');status('產生報帳表…');
+async function exportXls(){if(!S.trips.length)return status('沒有待報帳行程');
+const miss=ExpenseSheet.missingProfile(S.settings.profile);if(miss.length){status('請先在設定填好'+miss.join('、'));goSetup();return}
+status('產生報帳表…');
 try{const XLSX=await loadXLSX();const buf=await fetch('./company-template.xls').then(r=>{if(!r.ok)throw new Error('找不到報帳範本');return r.arrayBuffer()});
 const wb=XLSX.read(buf,{type:'array',cellStyles:true});
 const trips=S.trips.slice().sort((a,b)=>String(formOf(a).date).localeCompare(String(formOf(b).date))||a.id-b.id);

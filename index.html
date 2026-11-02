@@ -63,6 +63,11 @@
   </div>
 </header>
 <main>
+<section class="win" id="setupBox" hidden>
+<h2><span>第一次使用</span></h2>
+<p class="flavor">匯出報帳表前，請先在「設定」填好<b id="setupMissing"></b>。只會存在這台手機，不會上傳。</p>
+<button type="button" id="btnSetup" class="big gold">前往設定</button>
+</section>
 <section class="win" id="trip">
 <h2><span>旅程</span></h2>
 <div id="tripIdle">
@@ -97,11 +102,11 @@
 <h2><span>常用地點</span></h2>
 <ul id="places"></ul>
 </section>
-<section class="win">
+<section class="win" id="settingsBox">
 <h2><span>設定</span></h2>
-<label>受款人<input id="setPayee" type="text" autocomplete="name"></label>
-<label>工號<input id="setEmp" type="text" inputmode="numeric" autocomplete="off"></label>
-<label>車號<input id="setCar" type="text" autocomplete="off"></label>
+<label>受款人<input id="setPayee" type="text" autocomplete="name" placeholder="必填"></label>
+<label>工號<input id="setEmp" type="text" inputmode="numeric" autocomplete="off" placeholder="必填"></label>
+<label>車號<input id="setCar" type="text" autocomplete="off" placeholder="必填，例如 ABC-1234"></label>
 <label>油品<select id="setFuel"><option>92</option><option>95</option><option>98</option></select></label>
 <p class="fixedmeta" id="fixedMeta"></p>
 </section>

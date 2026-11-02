@@ -12,6 +12,7 @@
     deptCode: '324603000',
     freewayLabel: '高速公路計程補助'
   };
+  // Personal values stay empty here; the user enters them once and they are kept on the device.
   const DEFAULT_PROFILE = {
     payee: '',
     empId: '',
@@ -19,6 +20,7 @@
     fuel: '95'
   };
   const FUELS = ['92', '95', '98'];
+  const PROFILE_LABELS = { payee: '受款人', empId: '工號', carNo: '車號' };
 
   function clean(s) {
     return String(s ?? '').replace(/[\s\u3000\u00a0\u200b\ufeff\u2028\u2029]+/g, '');
@@ -52,11 +54,16 @@
   }
   function profileOf(profile) {
     const p = Object.assign({}, DEFAULT_PROFILE, profile || {});
-    p.payee = clean(p.payee) || DEFAULT_PROFILE.payee;
-    p.empId = clean(p.empId) || DEFAULT_PROFILE.empId;
-    p.carNo = clean(p.carNo) || DEFAULT_PROFILE.carNo;
+    p.payee = clean(p.payee);
+    p.empId = clean(p.empId);
+    p.carNo = clean(p.carNo);
     p.fuel = FUELS.includes(clean(p.fuel)) ? clean(p.fuel) : '95';
     return p;
+  }
+  // Labels of the personal fields that are still empty.
+  function missingProfile(profile) {
+    const p = profileOf(profile);
+    return Object.keys(PROFILE_LABELS).filter(k => !p[k]).map(k => PROFILE_LABELS[k]);
   }
   function rowFor(trip) {
     const f = Object.assign({ date: '', time: '0800', client: '', reason: '', parking: '' }, trip.form || {});
@@ -111,5 +118,5 @@
     });
     return wb;
   }
-  return { FIXED, DEFAULT_PROFILE, FUELS, clean, intText, parkingText, timeText, placeText, walkKm, profileOf, rowFor, fillWorkbook };
+  return { FIXED, DEFAULT_PROFILE, FUELS, clean, intText, parkingText, timeText, placeText, walkKm, profileOf, missingProfile, rowFor, fillWorkbook };
 });

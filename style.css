@@ -217,6 +217,8 @@ th{color:var(--cyan);font-weight:700}
 .map .leaflet-tile-pane{filter:brightness(.82) saturate(.85)}
 .map .leaflet-control-attribution{font-size:10px}
 #mapNote:empty{display:none}
+.warn{color:#ffd166}
+#results li{padding:6px 0}
 .roads td .sub{display:block}
 #backupBox .row>button{flex:1}
 .card{padding:12px 0;border-top:1px solid rgba(62,240,255,.22)}

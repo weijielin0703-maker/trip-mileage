@@ -25,7 +25,8 @@ function timeSelect(value,attrs){return `<select ${attrs||''}>`+TIMES.map(t=>`<o
 function walkOf(t){return ExpenseSheet.walkKm(t)}
 let lastNom=0;async function nom(path){const w=lastNom+1100-Date.now();if(w>0)await new Promise(r=>setTimeout(r,w));lastNom=Date.now();
 const r=await fetch('https://nominatim.openstreetmap.org/'+path+'&format=jsonv2&accept-language=zh-TW');if(!r.ok)throw new Error('Nominatim '+r.status);return r.json()}
-function shortName(j){const a=j.address||{};return j.name||[a.city||a.county,a.town||a.suburb||a.city_district,a.road].filter(Boolean).join('')||j.display_name}
+function shortName(j){const a=j.address||{},hn=a.house_number?String(a.house_number).replace(/號?$/,'號'):'';
+return j.name||[a.city||a.county,a.town||a.suburb||a.city_district,a.road&&a.road+hn].filter(Boolean).join('')||j.display_name}
 function dist(a,b){const R=6371e3,t=x=>x*Math.PI/180,dl=t(b.lat-a.lat),dg=t(b.lng-a.lng);
 const h=Math.sin(dl/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 const nearPlace=p=>S.places.map(x=>[x,dist(x,p)]).filter(x=>x[1]<=300).sort((a,b)=>a[1]-b[1])[0]?.[0];
@@ -100,7 +101,7 @@ stops.forEach((s,i)=>L.circleMarker([+s.lat,+s.lng],{radius:i===0||i===stops.len
 mapView.fitBounds(L.latLngBounds(pts.concat(line||[])),{padding:[24,24],maxZoom:16});
 $('mapNote').textContent=line?'':'舊版行程沒有存路線，只用虛線連起停靠點。'}
 function render(){const c=S.current;$('tripIdle').hidden=!!c;$('tripActive').hidden=!c;
-$('stops').innerHTML=c?(c.stops.length?c.stops.map((s,i)=>`<li class="arrival"><button type="button" class="namebtn" data-a="ren" data-i="${i}">抵達：${esc(s.name)}</button><p class="hint">TAP NAME · 點名稱改名</p><span class="sub">${s.time?new Date(s.time).toLocaleTimeString('zh-TW'):''} ${s.accuracy?'±'+esc(s.accuracy)+'m':''}${s.address?'<br>'+esc(s.address):''}</span><div class="row">
+$('stops').innerHTML=c?(c.stops.length?c.stops.map((s,i)=>`<li class="arrival"><button type="button" class="namebtn" data-a="ren" data-i="${i}">抵達：${esc(s.name)}</button><p class="hint">TAP NAME · 點名稱改名</p><span class="sub">${s.time?new Date(s.time).toLocaleTimeString('zh-TW'):''} ${s.accuracy?'±'+esc(s.accuracy)+'m':''}${s.approx?'<b class="warn">約略位置（路段）</b>':''}${s.address?'<br>'+esc(s.address):''}</span><div class="row">
 <button type="button" class="mini" data-a="up" data-i="${i}">↑</button><button type="button" class="mini" data-a="down" data-i="${i}">↓</button>
 <button type="button" class="mini" data-a="fav" data-i="${i}">存為常用</button><button type="button" class="mini danger" data-a="del" data-i="${i}">刪除</button></div></li>`).join(''):'<li class="sub">還沒有抵達紀錄。點名稱可改名。</li>'):'';
 if(c)fillLiveForm();
@@ -153,11 +154,19 @@ $('btnHere').onclick=recordHere;
 $('btnEnd').onclick=async()=>{if(!lock())return;const pending=locate();status('定位中…');try{await addStop(await pending);await calc()}catch(e){status(e.message)}finally{unlock()}};
 $('btnCalc').onclick=async()=>{if(!lock())return;try{await calc()}finally{unlock()}};
 $('btnCancel').onclick=async()=>{if(confirm('放棄目前行程？')){S.current=null;$('result').innerHTML='';await save();render()}};
-$('btnSearch').onclick=async()=>{const q=$('q').value.trim();if(!q)return;status('搜尋中…');
-try{const r=await nom(`search?q=${encodeURIComponent(q)}&countrycodes=tw&limit=5&addressdetails=1`);status(r.length?'':'找不到');
-$('results').innerHTML=r.map((x,i)=>`<li><button type="button" class="mini" data-r="${i}">加入</button> ${esc(x.display_name)}</li>`).join('');
+// Tries the text as typed, then Geocode's parsed forms (house number apart from road, then lane, then road).
+async function searchAddress(q){const vs=Geocode.variants(q);
+for(let i=0;i<vs.length;i++){if(i)status('換個寫法再找…（'+(i+1)+'/'+vs.length+'）');
+const r=await nom('search?'+new URLSearchParams(vs[i].params)+'&countrycodes=tw&limit=5&addressdetails=1');
+if(r.length)return{hits:r,exact:Geocode.isExact(vs[i],r[0])}}
+return{hits:[],exact:false}}
+$('btnSearch').onclick=async()=>{const q=$('q').value.trim();if(!q)return;status('搜尋中…');$('results').innerHTML='';
+try{const {hits:r,exact}=await searchAddress(q);status(r.length?'':'找不到，試試只打路名或地標');
+$('results').innerHTML=(r.length&&!exact?'<li class="sub warn">地圖資料裡沒有這個門牌，以下是路段的位置，可能和實際地點有段距離。</li>':'')+
+r.map((x,i)=>`<li><button type="button" class="mini" data-r="${i}">加入</button> ${esc(x.display_name)}</li>`).join('');
 $('results').onclick=async e=>{const btn=e.target.closest('button');if(!btn)return;const x=r[btn.dataset.r];if(!x)return;$('results').innerHTML='';$('q').value='';
-await addStop({lat:+x.lat,lng:+x.lon,name:shortName(x),address:x.display_name,time:new Date().toISOString(),manual:true})}}catch(e){status(e.message)}};
+await addStop({lat:+x.lat,lng:+x.lon,name:exact?shortName(x):clean(Geocode.normalize(q).replace(/(\d+樓.*|\d+F.*)$/i,'')),address:x.display_name,time:new Date().toISOString(),manual:true,approx:!exact||undefined})}}catch(e){status(e.message)}};
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('btnSearch').click()}});
 ['setPayee','setEmp','setCar','setFuel'].forEach(id=>{$(id).addEventListener('input',readProfile);$(id).addEventListener('change',()=>{readProfile();render()})});
 $('btnSetup').onclick=goSetup;
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}

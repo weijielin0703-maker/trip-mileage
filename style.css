@@ -205,6 +205,20 @@ button.namebtn{
 table{width:100%;border-collapse:collapse;font-size:.9rem;margin:8px 0}
 th,td{border-bottom:1px solid rgba(62,240,255,.22);padding:6px 4px;text-align:left;vertical-align:top}
 th{color:var(--cyan);font-weight:700}
+.map{
+  height:260px;
+  margin:8px 0;
+  border:1px solid rgba(62,240,255,.55);
+  border-radius:4px 14px;
+  overflow:hidden;
+  background:#0b1324;
+  z-index:0;
+}
+.map .leaflet-tile-pane{filter:brightness(.82) saturate(.85)}
+.map .leaflet-control-attribution{font-size:10px}
+#mapNote:empty{display:none}
+.roads td .sub{display:block}
+#backupBox .row>button{flex:1}
 .card{padding:12px 0;border-top:1px solid rgba(62,240,255,.22)}
 .card:first-child{border-top:0}
 .card h3{margin:0 0 4px;font-size:1rem}

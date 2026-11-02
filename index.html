@@ -110,7 +110,14 @@
 <label>油品<select id="setFuel"><option>92</option><option>95</option><option>98</option></select></label>
 <p class="fixedmeta" id="fixedMeta"></p>
 </section>
-<p class="fineprint">總里程來自 OSRM／OpenStreetMap，不是直線距離。行走里程是國道加上交流道、匝道，四捨五入成整數後寫進報帳表。資料只存在這台裝置。</p>
+<section class="win" id="backupBox">
+<h2><span>備份</span></h2>
+<p class="flavor">資料只存在這台手機。匯出的備份檔可以存到「檔案」或雲端硬碟，換手機時再匯入。</p>
+<div class="row"><button type="button" id="btnBackup">匯出備份 (.json)</button><button type="button" id="btnRestore">匯入備份</button></div>
+<input type="file" id="restoreFile" accept=".json,application/json" hidden>
+<p class="sub" id="backupInfo"></p>
+</section>
+<p class="fineprint">總里程來自 OSRM／OpenStreetMap，不是直線距離。行走里程是國道加上交流道、匝道，四捨五入成整數後寫進報帳表。地圖 © OpenStreetMap 貢獻者。資料只存在這台裝置。</p>
 </main>
 <script src="./routing.js"></script>
 <script src="./expense-sheet.js"></script>

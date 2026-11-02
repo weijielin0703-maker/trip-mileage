@@ -52,7 +52,7 @@ async function calc(){if(!S.current)return status('目前沒有進行中的行�
 try{if(typeof Routing==='undefined')throw new Error('路線模組未載入');
 const r=await Routing.computeTrip(st,{countRamps:false});
 const form=Object.assign(defaultForm(),S.current.form);
-const trip={id:Date.now(),date:form.date,stops:st,route:ExpenseSheet.placeText(st),total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km,legs:r.legs,form};
+const trip={id:Date.now(),date:form.date,stops:st,route:ExpenseSheet.placeText(st),total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km,legs:r.legs,roads:r.roads,polyline:r.polyline,form};
 S.trips.unshift(trip);S.current=null;await save();status('');render();showResult(trip)}catch(e){status(e.message||'路線計算失敗')}}
 function formFields(trip){const f=formOf(trip);const id=esc(trip.id);
 return `<div class="fields" data-trip="${id}">
@@ -62,12 +62,33 @@ return `<div class="fields" data-trip="${id}">
 <label>事由<input type="text" data-k="reason" value="${esc(f.reason)}" autocomplete="off"></label>
 <label>停車費<input type="number" data-k="parking" value="${esc(f.parking)}" inputmode="decimal" step="1" placeholder="空白為 0"></label>
 </div>`}
+function roadsTable(t){if(!Array.isArray(t.roads))return '<p class="sub">這趟是舊版算的，沒有國道明細。</p>';
+if(!t.roads.length)return '<p class="sub">這趟沒有走國道。</p>';
+return `<table class="roads"><tr><th>計入行走里程的道路</th><th>km</th></tr>`+t.roads.map(r=>`<tr><td>${esc(r.name)}<span class="sub">${r.kind==='ramp'?'交流道／匝道':'國道'}</span></td><td>${esc(r.km)}</td></tr>`).join('')+`</table><p class="sub">可以和 Google 地圖的路線對照，路名不對時代表判斷有誤。</p>`}
 function showResult(t){const walk=walkOf(t);
-$('result').innerHTML=`<div class="log" data-trip="${esc(t.id)}"><div class="hud"><div class="hud-cell"><div class="hud-lab">TOTAL</div><div class="hud-num">${esc(t.total_km)}</div><div class="hud-unit">總里程 km</div></div><div class="hud-cell alt"><div class="hud-lab">FREEWAY</div><div class="hud-num">${esc(walk)}</div><div class="hud-unit">行走里程 km</div></div></div><p class="sub">匯出日總里程 ${ExpenseSheet.intText(t.total_km)}，行走里程 ${walk}（國道 ${esc(t.freeway_km)}＋交流道／匝道 ${esc(t.ramp_km)}，四捨五入）</p><table><tr><th>路段</th><th>km</th><th>國道</th></tr>`+
-(t.legs||[]).map(l=>`<tr><td>${esc(l.from)} → ${esc(l.to)}</td><td>${l.km}</td><td>${l.freeway_km}</td></tr>`).join('')+
-`<tr><th>合計／行走</th><th>${esc(t.total_km)}</th><th>${esc(walk)}</th></tr></table>`+formFields(t)+`</div>`}
+$('result').innerHTML=`<div class="log" data-trip="${esc(t.id)}"><div class="hud"><div class="hud-cell"><div class="hud-lab">TOTAL</div><div class="hud-num">${esc(t.total_km)}</div><div class="hud-unit">總里程 km</div></div><div class="hud-cell alt"><div class="hud-lab">FREEWAY</div><div class="hud-num">${esc(walk)}</div><div class="hud-unit">行走里程 km</div></div></div><p class="sub">匯出日總里程 ${ExpenseSheet.intText(t.total_km)}，行走里程 ${walk}（國道 ${esc(t.freeway_km)}＋交流道／匝道 ${esc(t.ramp_km)}，四捨五入）</p><div class="map" id="map" role="img" aria-label="路線地圖"></div><p class="sub" id="mapNote"></p><table><tr><th>路段</th><th>km</th><th>國道</th></tr>`+
+(t.legs||[]).map(l=>`<tr><td>${esc(l.from)} → ${esc(l.to)}</td><td>${esc(l.km)}</td><td>${esc(l.freeway_km)}</td></tr>`).join('')+
+`<tr><th>合計／行走</th><th>${esc(t.total_km)}</th><th>${esc(walk)}</th></tr></table>`+roadsTable(t)+formFields(t)+`</div>`;
+drawMap(t)}
+let mapView=null;
+function loadLeaflet(){if(window.L)return Promise.resolve(window.L);
+if(!document.querySelector('link[data-leaflet]')){const l=document.createElement('link');l.rel='stylesheet';l.href='./vendor/leaflet/leaflet.css';l.dataset.leaflet='1';document.head.appendChild(l)}
+return new Promise((ok,no)=>{const s=document.createElement('script');s.src='./vendor/leaflet/leaflet.js';s.onload=()=>window.L?ok(window.L):no(new Error('地圖元件載入失敗'));s.onerror=()=>no(new Error('地圖元件載入失敗'));document.head.appendChild(s)})}
+async function drawMap(t){if(mapView){mapView.remove();mapView=null}
+const stops=(t.stops||[]).filter(s=>Number.isFinite(+s.lat)&&Number.isFinite(+s.lng));if(!stops.length){$('map').hidden=true;return}
+let L;try{L=await loadLeaflet()}catch(e){$('map').hidden=true;$('mapNote').textContent=e.message;return}
+const box=$('map');if(!box||box.closest('[data-trip]').dataset.trip!==String(t.id))return;
+mapView=L.map(box,{zoomControl:true,attributionControl:true,scrollWheelZoom:false});
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(mapView);
+const line=Array.isArray(t.polyline)&&t.polyline.length>1?t.polyline:null;
+const pts=stops.map(s=>[+s.lat,+s.lng]);
+const path=line?L.polyline(line,{color:'#3ef0ff',weight:5,opacity:.9}):L.polyline(pts,{color:'#3ef0ff',weight:3,dashArray:'6 8'});
+path.addTo(mapView);
+stops.forEach((s,i)=>L.circleMarker([+s.lat,+s.lng],{radius:i===0||i===stops.length-1?8:6,color:'#070b16',weight:2,fillColor:i===0?'#c8ff4a':i===stops.length-1?'#ff3d9a':'#ffffff',fillOpacity:1}).bindTooltip((i+1)+'. '+String(s.name||''),{direction:'top'}).addTo(mapView));
+mapView.fitBounds(L.latLngBounds(pts.concat(line||[])),{padding:[24,24],maxZoom:16});
+$('mapNote').textContent=line?'':'舊版行程沒有存路線，只用虛線連起停靠點。'}
 function render(){const c=S.current;$('tripIdle').hidden=!!c;$('tripActive').hidden=!c;
-$('stops').innerHTML=c?(c.stops.length?c.stops.map((s,i)=>`<li class="arrival"><button type="button" class="namebtn" data-a="ren" data-i="${i}">抵達：${esc(s.name)}</button><p class="hint">TAP NAME · 點名稱改名</p><span class="sub">${s.time?new Date(s.time).toLocaleTimeString('zh-TW'):''} ${s.accuracy?'±'+s.accuracy+'m':''}${s.address?'<br>'+esc(s.address):''}</span><div class="row">
+$('stops').innerHTML=c?(c.stops.length?c.stops.map((s,i)=>`<li class="arrival"><button type="button" class="namebtn" data-a="ren" data-i="${i}">抵達：${esc(s.name)}</button><p class="hint">TAP NAME · 點名稱改名</p><span class="sub">${s.time?new Date(s.time).toLocaleTimeString('zh-TW'):''} ${s.accuracy?'±'+esc(s.accuracy)+'m':''}${s.address?'<br>'+esc(s.address):''}</span><div class="row">
 <button type="button" class="mini" data-a="up" data-i="${i}">↑</button><button type="button" class="mini" data-a="down" data-i="${i}">↓</button>
 <button type="button" class="mini" data-a="fav" data-i="${i}">存為常用</button><button type="button" class="mini danger" data-a="del" data-i="${i}">刪除</button></div></li>`).join(''):'<li class="sub">還沒有抵達紀錄。點名稱可改名。</li>'):'';
 if(c)fillLiveForm();
@@ -78,7 +99,7 @@ $('places').innerHTML=S.places.map((p,i)=>`<li class="place"><b>${esc(p.name)}</
 const p=profile();S.settings.profile=p;
 fillIfIdle($('setPayee'),p.payee);fillIfIdle($('setEmp'),p.empId);fillIfIdle($('setCar'),p.carNo);fillIfIdle($('setFuel'),p.fuel);
 const F=ExpenseSheet.FIXED;
-$('fixedMeta').textContent=`公司 ${F.company}　廠區 ${F.plant}　${F.division}　${F.dept}　${F.deptCode}`;renderSetup()}
+$('fixedMeta').textContent=`公司 ${F.company}　廠區 ${F.plant}　${F.division}　${F.dept}　${F.deptCode}`;renderSetup();renderBackup()}
 function renderSetup(){const miss=ExpenseSheet.missingProfile(S.settings.profile);$('setupBox').hidden=!miss.length;$('setupMissing').textContent=miss.join('、');return miss}
 const PROFILE_INPUTS={受款人:'setPayee',工號:'setEmp',車號:'setCar'};
 function goSetup(){const miss=renderSetup();$('settingsBox').scrollIntoView({behavior:'smooth',block:'start'});const el=$(PROFILE_INPUTS[miss[0]]);if(el)setTimeout(()=>el.focus({preventScroll:true}),350)}
@@ -145,6 +166,39 @@ if(how==='abort'){status('已取消分享');return}
 $('btnClear').hidden=false;status('已匯出 '+trips.length+' 筆。確認檔案沒問題後可清空清單。')}catch(e){status(e.message||'匯出失敗')}}
 $('btnXls').onclick=()=>{exportXls()};
 $('btnClear').onclick=async()=>{if(!S.trips.length)return;if(!confirm('清空所有待報帳行程？匯出的檔案不會被刪除。'))return;S.trips=[];$('btnClear').hidden=true;$('result').innerHTML='';await save();render();status('已清空待報帳行程')};
+function stamp(){return todayISO().replace(/-/g,'')}
+async function exportBackup(){readLiveForm();await save();
+const body=JSON.stringify({app:'trip-mileage',version:1,exportedAt:new Date().toISOString(),data:{trips:S.trips,places:S.places,current:S.current,settings:S.settings}},null,1);
+const how=await shareBlob(`出差里程備份-${stamp()}.json`,new Blob([body],{type:'application/json'}));
+if(how==='abort')return status('已取消分享');
+S.settings.lastBackup=new Date().toISOString();await save();renderBackup();status('備份已匯出。請存到「檔案」或雲端硬碟。')}
+const num=v=>Number.isFinite(+v)?+v:0;
+function okStop(s){return s&&typeof s==='object'&&Number.isFinite(+s.lat)&&Number.isFinite(+s.lng)}
+function cleanStop(s){return Object.assign({},s,{lat:+s.lat,lng:+s.lng,name:String(s.name||'停靠點'),accuracy:s.accuracy==null?undefined:num(s.accuracy)})}
+function cleanTrip(t){if(!t||typeof t!=='object'||!Array.isArray(t.stops))return null;
+return Object.assign({},t,{id:num(t.id)||Date.now()+Math.random(),stops:t.stops.filter(okStop).map(cleanStop),total_km:num(t.total_km),freeway_km:num(t.freeway_km),ramp_km:num(t.ramp_km),
+legs:(Array.isArray(t.legs)?t.legs:[]).map(l=>({from:String(l&&l.from||''),to:String(l&&l.to||''),km:num(l&&l.km),freeway_km:num(l&&l.freeway_km),ramp_km:num(l&&l.ramp_km)})),
+roads:Array.isArray(t.roads)?t.roads.map(r=>({name:String(r&&r.name||''),ref:String(r&&r.ref||''),kind:r&&r.kind==='ramp'?'ramp':'freeway',km:num(r&&r.km)})):undefined,
+polyline:Array.isArray(t.polyline)?t.polyline.filter(p=>Array.isArray(p)&&Number.isFinite(+p[0])&&Number.isFinite(+p[1])).map(p=>[+p[0],+p[1]]):undefined})}
+async function importBackup(file){let b;try{b=JSON.parse(await file.text())}catch(e){return status('這不是出差里程的備份檔')}
+const d=b&&b.app==='trip-mileage'&&b.data;if(!d||!Array.isArray(d.trips))return status('這不是出差里程的備份檔');
+const have=new Set(S.trips.map(t=>String(t.id)));
+const trips=d.trips.map(cleanTrip).filter(t=>t&&!have.has(String(t.id)));
+const key=p=>p.name+'|'+(+p.lat).toFixed(5)+'|'+(+p.lng).toFixed(5);
+const known=new Set(S.places.map(key));
+const places=(Array.isArray(d.places)?d.places:[]).filter(p=>okStop(p)&&p.name).map(p=>({name:clean(p.name),lat:+p.lat,lng:+p.lng})).filter(p=>p.name&&!known.has(key(p))&&known.add(key(p)));
+const when=b.exportedAt?new Date(b.exportedAt).toLocaleString('zh-TW'):'不明時間';
+if(!confirm(`備份時間：${when}\n會新增 ${trips.length} 筆待報帳行程、${places.length} 個常用地點。\n目前的資料都會保留，相同的行程不會重複。要匯入嗎？`))return status('已取消匯入');
+S.trips=S.trips.concat(trips).sort((a,b)=>b.id-a.id);S.places=S.places.concat(places);
+const mine=profile(),theirs=ExpenseSheet.profileOf(d.settings&&d.settings.profile),wasEmpty=ExpenseSheet.missingProfile(mine).length===3;
+for(const k of ['payee','empId','carNo'])if(!mine[k]&&theirs[k])mine[k]=theirs[k];
+if(wasEmpty)mine.fuel=theirs.fuel;S.settings.profile=mine;
+let cur='';if(!S.current&&d.current&&Array.isArray(d.current.stops)&&d.current.stops.some(okStop)){S.current={stops:d.current.stops.filter(okStop).map(cleanStop),form:Object.assign(defaultForm(),d.current.form)};cur='，並還原進行中的行程'}
+await save();render();status(`已匯入 ${trips.length} 筆行程、${places.length} 個地點${cur}`)}
+function renderBackup(){const t=S.settings.lastBackup;$('backupInfo').textContent=t?'上次備份：'+new Date(t).toLocaleString('zh-TW'):'還沒有備份過。換手機或清除 Safari 資料前，記得先匯出備份。'}
+$('btnBackup').onclick=()=>{exportBackup().catch(e=>status(e.message||'備份失敗'))};
+$('btnRestore').onclick=()=>$('restoreFile').click();
+$('restoreFile').onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(f)await importBackup(f)};
 (async()=>{for(const k of Object.keys(S)){const v=await DB.get(k);if(v!==undefined&&v!==null)S[k]=v}
 if(!Array.isArray(S.trips))S.trips=[];if(!Array.isArray(S.places))S.places=[];
 if(!S.settings||typeof S.settings!=='object')S.settings={};

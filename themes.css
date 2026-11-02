@@ -1,0 +1,181 @@
+/* Themes: each redefines the tokens from style.css, plus a few signature touches.
+   Styles and palettes follow the UI Styles Showcase by Josh Hu (github.com/joshhu/uitest, MIT).
+   The default look (極光 HUD) lives in style.css :root. */
+
+/* 極簡 Minimalism: white, black type, hairlines, no decoration. */
+[data-theme="minimal"]{
+  color-scheme:light;
+  --bg:#fff;--deco:none;--aurora:none;
+  --ink:#111;--muted:#666;--fine:#666;
+  --accent:#111;--accent-2:#555;--accent-3:#111;--warn:#b45309;
+  --line:#e6e6e6;--line-strong:#bbb;
+  --font:Inter,"Noto Sans TC","PingFang TC",sans-serif;--font-display:Inter,sans-serif;--font-num:Inter,sans-serif;
+  --header-bg:#fff;--header-border:#e6e6e6;--header-shadow:none;--badge-filter:grayscale(1) contrast(1.4);
+  --panel-bg:#fff;--panel-border:#e6e6e6;--panel-radius:0;--panel-shadow:none;--blur:none;
+  --heading-bg:transparent;--heading-ink:#111;--heading-radius:0;
+  --box-bg:#fafafa;--box-radius:0;
+  --btn-bg:#fff;--btn-ink:#111;--btn-border:#111;--btn-radius:0;--btn-shadow:none;--big-radius:0;
+  --b1-bg:#111;--b1-ink:#fff;--b1-shadow:none;
+  --b2-bg:#fff;--b2-ink:#111;--b2-shadow:inset 0 0 0 1px #111;
+  --b3-bg:#F5F1E8;--b3-ink:#111;--b3-shadow:inset 0 0 0 1px #111;
+  --danger-bg:#fff;--danger-ink:#c00;--danger-border:#c00;
+  --field-bg:#fff;--field-border:#ccc;--field-radius:0;--placeholder:#999;--focus:0 0 0 3px rgba(0,0,0,.1);--focus-border:#111;
+  --hud-bg:#fff;--hud-border:#111;--hud-shadow:none;--hud-border-2:#111;--hud-shadow-2:none;
+  --hud-num:#111;--hud-glow:none;--hud-glow-2:none;
+  --map-bg:#f2f2f2;--map-filter:none;
+}
+[data-theme="minimal"] .win>h2 span{padding:0 0 4px;border-bottom:2px solid #111;letter-spacing:.1em}
+
+/* 電子紙 E-Ink / Paper: newsprint contrast, serif type, black rules. Easiest to read in sunlight. */
+[data-theme="paper"]{
+  color-scheme:light;
+  --bg:#f5f1eb;--deco:none;--aurora:none;
+  --ink:#1a1a1a;--muted:#555;--fine:#555;
+  --accent:#1a1a1a;--accent-2:#1a1a1a;--accent-3:#1a1a1a;--warn:#8a4b00;
+  --line:rgba(26,26,26,.25);--line-strong:#1a1a1a;
+  --font:"Noto Serif TC",Newsreader,Georgia,serif;--font-display:ui-monospace,Menlo,Consolas,monospace;--font-num:"Noto Serif TC",Georgia,serif;
+  --header-bg:#f5f1eb;--header-border:#1a1a1a;--header-shadow:none;--badge-filter:grayscale(1) contrast(1.3);
+  --panel-bg:#f5f1eb;--panel-border:#1a1a1a;--panel-radius:0;--panel-shadow:none;--blur:none;
+  --heading-bg:#1a1a1a;--heading-ink:#f5f1eb;--heading-radius:0;
+  --box-bg:transparent;--box-radius:0;
+  --btn-bg:transparent;--btn-ink:#1a1a1a;--btn-border:#1a1a1a;--btn-radius:0;--btn-shadow:none;--big-radius:0;
+  --b1-bg:#1a1a1a;--b1-ink:#f5f1eb;--b1-shadow:none;
+  --b2-bg:#f5f1eb;--b2-ink:#1a1a1a;--b2-shadow:inset 0 0 0 2px #1a1a1a;
+  --b3-bg:#1a1a1a;--b3-ink:#f5f1eb;--b3-shadow:none;
+  --danger-bg:transparent;--danger-ink:#1a1a1a;--danger-border:#1a1a1a;
+  --field-bg:#fbf8f3;--field-border:#1a1a1a;--field-radius:0;--placeholder:#777;--focus:0 0 0 2px #1a1a1a;--focus-border:#1a1a1a;
+  --hud-bg:transparent;--hud-border:#1a1a1a;--hud-shadow:none;--hud-border-2:#1a1a1a;--hud-shadow-2:none;
+  --hud-num:#1a1a1a;--hud-glow:none;--hud-glow-2:none;
+  --map-bg:#e9e4dc;--map-filter:grayscale(1) contrast(1.05);
+}
+[data-theme="paper"] .danger{text-decoration:underline;text-underline-offset:3px}
+
+/* 玻璃擬態 Glassmorphism: frosted white panels over a violet gradient. */
+[data-theme="glass"]{
+  color-scheme:dark;
+  --bg:linear-gradient(135deg,#667eea 0%,#764ba2 55%,#f093fb 100%) fixed;--deco:none;--aurora:block;
+  --ink:#fff;--muted:rgba(255,255,255,.82);--fine:rgba(255,255,255,.85);
+  --accent:#fff;--accent-2:#ffd6f3;--accent-3:#e3fbff;--warn:#ffe66d;
+  --line:rgba(255,255,255,.25);--line-strong:rgba(255,255,255,.55);
+  --font:Inter,"Noto Sans TC","PingFang TC",sans-serif;--font-display:Inter,sans-serif;--font-num:Inter,sans-serif;
+  --header-bg:rgba(255,255,255,.12);--header-border:rgba(255,255,255,.3);--header-shadow:0 8px 32px rgba(31,38,135,.2);--badge-filter:none;
+  --panel-bg:rgba(255,255,255,.16);--panel-border:rgba(255,255,255,.35);--panel-radius:20px;--panel-shadow:0 8px 32px rgba(31,38,135,.25);--blur:blur(16px);
+  --heading-bg:rgba(255,255,255,.25);--heading-ink:#fff;--heading-radius:999px;
+  --box-bg:rgba(255,255,255,.1);--box-radius:14px;
+  --btn-bg:rgba(255,255,255,.18);--btn-ink:#fff;--btn-border:rgba(255,255,255,.4);--btn-radius:12px;--btn-shadow:none;--big-radius:16px;
+  --b1-bg:#fff;--b1-ink:#5b3fa0;--b1-shadow:0 8px 24px rgba(31,38,135,.25);
+  --b2-bg:linear-gradient(135deg,#FF1493,#8B00FF);--b2-ink:#fff;--b2-shadow:0 8px 24px rgba(139,0,255,.3);
+  --b3-bg:linear-gradient(135deg,#20B2AA,#0080FF);--b3-ink:#fff;--b3-shadow:0 8px 24px rgba(0,128,255,.3);
+  --danger-bg:rgba(255,20,147,.18);--danger-ink:#fff;--danger-border:rgba(255,214,243,.7);
+  --field-bg:rgba(255,255,255,.18);--field-border:rgba(255,255,255,.4);--field-radius:12px;--placeholder:rgba(255,255,255,.7);--focus:0 0 0 3px rgba(255,255,255,.35);--focus-border:#fff;
+  --hud-bg:rgba(255,255,255,.14);--hud-border:rgba(255,255,255,.5);--hud-shadow:none;--hud-border-2:rgba(255,214,243,.7);--hud-shadow-2:none;
+  --hud-num:#fff;--hud-glow:0 2px 12px rgba(0,0,0,.2);--hud-glow-2:0 2px 12px rgba(0,0,0,.2);
+  --map-bg:rgba(255,255,255,.2);--map-filter:none;
+}
+[data-theme="glass"] .aurora span{opacity:.35}
+
+/* 新野獸派 Neubrutalism: cream page, thick black outlines, hard offset shadows, loud fills. */
+[data-theme="neubrutal"]{
+  color-scheme:light;
+  --bg:#FFF8E7;--deco:none;--aurora:none;--bw:3px;
+  --ink:#000;--muted:#333;--fine:#333;
+  --accent:#000;--accent-2:#FF6B6B;--accent-3:#000;--warn:#c2410c;
+  --line:rgba(0,0,0,.25);--line-strong:#000;
+  --font:"Space Grotesk","Noto Sans TC","PingFang TC",sans-serif;--font-display:"Space Grotesk",sans-serif;--font-num:"Space Grotesk",sans-serif;--weight:600;
+  --header-bg:#FFE66D;--header-border:#000;--header-shadow:none;--badge-filter:none;
+  --panel-bg:#fff;--panel-border:#000;--panel-radius:0;--panel-shadow:6px 6px 0 #000;--blur:none;
+  --heading-bg:#FFE66D;--heading-ink:#000;--heading-radius:0;
+  --box-bg:#FFF8E7;--box-radius:0;
+  --btn-bg:#fff;--btn-ink:#000;--btn-border:#000;--btn-radius:0;--btn-shadow:3px 3px 0 #000;--big-radius:0;
+  --b1-bg:#4ECDC4;--b1-ink:#000;--b1-shadow:4px 4px 0 #000;
+  --b2-bg:#FF6B6B;--b2-ink:#000;--b2-shadow:4px 4px 0 #000;
+  --b3-bg:#FFE66D;--b3-ink:#000;--b3-shadow:4px 4px 0 #000;
+  --danger-bg:#FF6B6B;--danger-ink:#000;--danger-border:#000;
+  --field-bg:#fff;--field-border:#000;--field-radius:0;--placeholder:#777;--focus:4px 4px 0 #4ECDC4;--focus-border:#000;
+  --hud-bg:#A8E6CF;--hud-border:#000;--hud-shadow:4px 4px 0 #000;--hud-border-2:#000;--hud-shadow-2:4px 4px 0 #000;
+  --hud-num:#000;--hud-glow:none;--hud-glow-2:none;
+  --map-bg:#fff;--map-filter:none;
+}
+[data-theme="neubrutal"] .big{border:3px solid #000}
+[data-theme="neubrutal"] .win>h2 span{border:3px solid #000}
+[data-theme="neubrutal"] .hud-cell.alt{background:#FFE66D}
+[data-theme="neubrutal"] .fields{border-color:#000}
+[data-theme="neubrutal"] button:active{transform:translate(3px,3px);box-shadow:none}
+
+/* 黏土擬態 Claymorphism: pastel, puffy, rounded, soft double shadows. */
+[data-theme="clay"]{
+  color-scheme:light;
+  --bg:linear-gradient(160deg,#E6E6FA 0%,#f0f9ff 60%,#fdeee9 100%) fixed;--deco:none;--aurora:none;--bw:0;
+  --ink:#33375a;--muted:#6b6f8f;--fine:#6b6f8f;
+  --accent:#5a5fd8;--accent-2:#e2607a;--accent-3:#2f9a63;--warn:#b5651d;
+  --line:rgba(90,95,160,.16);--line-strong:rgba(90,95,160,.35);
+  --font:Nunito,"Noto Sans TC","PingFang TC",sans-serif;--font-display:Nunito,sans-serif;--font-num:Nunito,sans-serif;--weight:600;
+  --header-bg:rgba(247,248,255,.85);--header-border:transparent;--header-shadow:0 10px 24px rgba(150,155,210,.25);--badge-filter:none;
+  --panel-bg:#f7f8ff;--panel-border:transparent;--panel-radius:28px;
+  --panel-shadow:12px 12px 24px rgba(166,171,214,.55),-10px -10px 22px rgba(255,255,255,.9),inset 2px 2px 4px rgba(255,255,255,.7);--blur:none;
+  --heading-bg:#ADD8E6;--heading-ink:#23314f;--heading-radius:999px;
+  --box-bg:#eef0fb;--box-radius:18px;
+  --btn-bg:#f7f8ff;--btn-ink:#33375a;--btn-border:transparent;--btn-radius:16px;--btn-shadow:5px 5px 10px rgba(166,171,214,.5),-5px -5px 10px #fff;--big-radius:22px;
+  --b1-bg:#ADD8E6;--b1-ink:#23314f;--b1-shadow:inset -4px -4px 8px rgba(0,0,0,.08),inset 4px 4px 8px rgba(255,255,255,.7),6px 6px 14px rgba(120,140,190,.35);
+  --b2-bg:#FDBCB4;--b2-ink:#5a2a2a;--b2-shadow:inset -4px -4px 8px rgba(0,0,0,.08),inset 4px 4px 8px rgba(255,255,255,.7),6px 6px 14px rgba(200,140,140,.35);
+  --b3-bg:#98FF98;--b3-ink:#1f4d2a;--b3-shadow:inset -4px -4px 8px rgba(0,0,0,.08),inset 4px 4px 8px rgba(255,255,255,.7),6px 6px 14px rgba(110,190,120,.35);
+  --danger-bg:#fff0f0;--danger-ink:#c0392b;--danger-border:transparent;
+  --field-bg:#eef0fb;--field-border:transparent;--field-radius:14px;--placeholder:#9a9db8;--focus:0 0 0 3px rgba(90,95,216,.25);--focus-border:transparent;
+  --hud-bg:#f7f8ff;--hud-border:transparent;--hud-shadow:8px 8px 16px rgba(166,171,214,.5),-8px -8px 16px #fff;--hud-border-2:transparent;--hud-shadow-2:8px 8px 16px rgba(166,171,214,.5),-8px -8px 16px #fff;
+  --hud-num:#5a5fd8;--hud-glow:none;--hud-glow-2:none;
+  --map-bg:#eef0fb;--map-filter:saturate(.85);
+}
+[data-theme="clay"] input,[data-theme="clay"] select{box-shadow:inset 3px 3px 6px rgba(166,171,214,.45),inset -3px -3px 6px #fff}
+[data-theme="clay"] .hud-cell.alt .hud-num{color:#e2607a}
+
+/* 純黑 OLED: true black (saves battery on OLED iPhones), neon green and blue accents. */
+[data-theme="oled"]{
+  color-scheme:dark;
+  --bg:#000;--deco:none;--aurora:none;
+  --ink:#f2f2f2;--muted:#9a9a9a;--fine:#8a8a8a;
+  --accent:#39FF14;--accent-2:#3d9bff;--accent-3:#FFD700;--warn:#FFD700;
+  --line:#1f1f1f;--line-strong:#333;
+  --font:Inter,"Noto Sans TC","PingFang TC",sans-serif;--font-display:Inter,sans-serif;--font-num:Inter,sans-serif;
+  --header-bg:#000;--header-border:#1f1f1f;--header-shadow:none;--badge-filter:none;
+  --panel-bg:#000;--panel-border:#222;--panel-radius:14px;--panel-shadow:none;--blur:none;
+  --heading-bg:#121212;--heading-ink:#39FF14;--heading-radius:6px;
+  --box-bg:#0a0a0a;--box-radius:10px;
+  --btn-bg:#121212;--btn-ink:#f2f2f2;--btn-border:#2a2a2a;--btn-radius:10px;--btn-shadow:none;--big-radius:12px;
+  --b1-bg:#39FF14;--b1-ink:#000;--b1-shadow:none;
+  --b2-bg:#0080FF;--b2-ink:#fff;--b2-shadow:none;
+  --b3-bg:#FFD700;--b3-ink:#000;--b3-shadow:none;
+  --danger-bg:#121212;--danger-ink:#ff6b6b;--danger-border:#5a1f1f;
+  --field-bg:#0a0a0a;--field-border:#2a2a2a;--field-radius:8px;--placeholder:#666;--focus:0 0 0 3px rgba(57,255,20,.25);--focus-border:#39FF14;
+  --hud-bg:#000;--hud-border:#39FF14;--hud-shadow:none;--hud-border-2:#0080FF;--hud-shadow-2:none;
+  --hud-num:#fff;--hud-glow:none;--hud-glow-2:none;
+  --map-bg:#000;--map-filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9);
+}
+
+/* 像素 RPG Pixel Art: four-shade handheld-console green, chunky borders, pixel type. */
+[data-theme="pixel"]{
+  color-scheme:dark;
+  --bg:#0f380f;--deco:linear-gradient(rgba(155,188,15,.06) 2px,transparent 2px),linear-gradient(90deg,rgba(155,188,15,.06) 2px,transparent 2px);--deco-size:8px 8px;--aurora:none;--bw:4px;
+  --ink:#9bbc0f;--muted:#8bac0f;--fine:#8bac0f;
+  --accent:#9bbc0f;--accent-2:#c6e34a;--accent-3:#9bbc0f;--warn:#e0f87a;
+  --line:rgba(155,188,15,.3);--line-strong:#8bac0f;
+  --font:DotGothic16,"Noto Sans TC","PingFang TC",monospace;--font-display:"Press Start 2P",monospace;--font-num:"Press Start 2P",monospace;--weight:400;
+  --header-bg:#306230;--header-border:#9bbc0f;--header-shadow:none;--badge-filter:sepia(1) hue-rotate(40deg) saturate(2);
+  --panel-bg:#306230;--panel-border:#9bbc0f;--panel-radius:0;--panel-shadow:6px 6px 0 rgba(0,0,0,.35);--blur:none;
+  --heading-bg:#9bbc0f;--heading-ink:#0f380f;--heading-radius:0;
+  --box-bg:#0f380f;--box-radius:0;
+  --btn-bg:#0f380f;--btn-ink:#9bbc0f;--btn-border:#8bac0f;--btn-radius:0;--btn-shadow:3px 3px 0 #0f380f;--big-radius:0;
+  --b1-bg:#9bbc0f;--b1-ink:#0f380f;--b1-shadow:4px 4px 0 #0f380f;
+  --b2-bg:#8bac0f;--b2-ink:#0f380f;--b2-shadow:4px 4px 0 #0f380f;
+  --b3-bg:#c6e34a;--b3-ink:#0f380f;--b3-shadow:4px 4px 0 #0f380f;
+  --danger-bg:#0f380f;--danger-ink:#e0f87a;--danger-border:#e0f87a;
+  --field-bg:#0f380f;--field-border:#8bac0f;--field-radius:0;--placeholder:#5f7f1f;--focus:0 0 0 3px #9bbc0f;--focus-border:#9bbc0f;
+  --hud-bg:#0f380f;--hud-border:#9bbc0f;--hud-shadow:none;--hud-border-2:#c6e34a;--hud-shadow-2:none;
+  --hud-num:#9bbc0f;--hud-glow:3px 3px 0 #306230;--hud-glow-2:3px 3px 0 #306230;
+  --map-bg:#0f380f;--map-filter:grayscale(1) sepia(1) hue-rotate(45deg) saturate(1.6) brightness(.85);
+}
+[data-theme="pixel"] .hud-num{font-size:1.5rem;line-height:1.5}
+[data-theme="pixel"] .hud-lab{font-size:.6rem;line-height:1.6}
+[data-theme="pixel"] .hint{font-family:var(--font);font-size:.8rem}
+[data-theme="pixel"] .sum-km b{font-size:.8rem}
+[data-theme="pixel"] .brand-kicker{font-size:9px}
+[data-theme="pixel"] .big{border:4px solid #0f380f}

@@ -3,8 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#070b16">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#070b16" id="themeColor">
+<meta name="color-scheme" content="light dark">
+<script>
+// Apply the saved theme before first paint so light themes do not flash dark.
+try{var t=localStorage.getItem('theme');if(t&&t!=='aurora')document.documentElement.setAttribute('data-theme',t)}catch(e){}
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,6 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <title>出差里程</title>
 <link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./themes.css">
 <script>
 // Remembers scripts that failed to load or threw, so error messages can name them.
 window.__failedScripts=[];
@@ -119,6 +124,8 @@ addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')_
 <label>工號<input id="setEmp" type="text" inputmode="numeric" autocomplete="off" placeholder="必填"></label>
 <label>車號<input id="setCar" type="text" autocomplete="off" placeholder="必填，例如 ABC-1234"></label>
 <label>油品<select id="setFuel"><option>92</option><option>95</option><option>98</option></select></label>
+<p class="sub" id="themeLabel">主題（只影響這台手機的外觀）</p>
+<div class="themes" id="themes" role="radiogroup" aria-labelledby="themeLabel"></div>
 <p class="fixedmeta" id="fixedMeta"></p>
 </section>
 <section class="win" id="backupBox">

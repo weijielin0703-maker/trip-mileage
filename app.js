@@ -272,27 +272,6 @@ if(how==='abort'){status('已取消分享');return}
 $('btnClear').hidden=false;status('已匯出 '+trips.length+' 筆。確認檔案沒問題後可清空清單。')}catch(e){status(e.message||'匯出失敗')}}
 $('btnXls').onclick=()=>{exportXls()};
 $('btnClear').onclick=async()=>{if(!S.trips.length)return;if(!confirm('清空所有待報帳行程？匯出的檔案不會被刪除。'))return;S.trips=[];$('btnClear').hidden=true;$('result').innerHTML='';await save();render();status('已清空待報帳行程')};
-// Themes (themes.css). The choice lives in settings (so backups carry it) and in localStorage,
-// which the inline script in index.html reads before first paint.
-const THEMES=[
-{id:'aurora',name:'極光 HUD',desc:'預設・霓虹深色',color:'#070b16',sw:'linear-gradient(135deg,#070b16 45%,#3ef0ff 45% 62%,#ff3d9a 62%)'},
-{id:'minimal',name:'極簡',desc:'白底黑字',color:'#ffffff',sw:'linear-gradient(135deg,#fff 60%,#111 60%)',font:'Inter:wght@400;600;700'},
-{id:'paper',name:'電子紙',desc:'高對比・陽光下好讀',color:'#f5f1eb',sw:'linear-gradient(135deg,#f5f1eb 60%,#1a1a1a 60%)',font:'Noto+Serif+TC:wght@500;700'},
-{id:'glass',name:'玻璃擬態',desc:'毛玻璃・紫色漸層',color:'#764ba2',sw:'linear-gradient(135deg,#667eea,#764ba2 55%,#f093fb)',font:'Inter:wght@400;600;700'},
-{id:'neubrutal',name:'新野獸派',desc:'粗框・撞色',color:'#FFE66D',sw:'linear-gradient(135deg,#FFE66D 40%,#FF6B6B 40% 70%,#4ECDC4 70%)',font:'Space+Grotesk:wght@500;700'},
-{id:'clay',name:'黏土擬態',desc:'粉彩・圓潤',color:'#E6E6FA',sw:'linear-gradient(135deg,#ADD8E6 35%,#FDBCB4 35% 68%,#98FF98 68%)',font:'Nunito:wght@600;800'},
-{id:'oled',name:'純黑 OLED',desc:'省電・夜間',color:'#000000',sw:'linear-gradient(135deg,#000 55%,#39FF14 55% 75%,#0080FF 75%)',font:'Inter:wght@400;600;700'},
-{id:'pixel',name:'像素 RPG',desc:'掌機綠・像素字',color:'#0f380f',sw:'linear-gradient(135deg,#0f380f 30%,#306230 30% 55%,#8bac0f 55% 80%,#9bbc0f 80%)',font:'DotGothic16&family=Press+Start+2P'}];
-function themeOf(id){return THEMES.find(t=>t.id===id)||THEMES[0]}
-function applyTheme(id){const t=themeOf(id),root=document.documentElement;
-if(t.id==='aurora')root.removeAttribute('data-theme');else root.setAttribute('data-theme',t.id);
-$('themeColor').setAttribute('content',t.color);
-if(t.font&&!document.querySelector(`link[data-font="${t.id}"]`)){const l=document.createElement('link');l.rel='stylesheet';l.dataset.font=t.id;l.href=`https://fonts.googleapis.com/css2?family=${t.font}&display=swap`;document.head.appendChild(l)}
-try{localStorage.setItem('theme',t.id)}catch(e){}
-document.querySelectorAll('#themes [data-theme-id]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.themeId===t.id)));
-return t.id}
-function renderThemes(){$('themes').innerHTML=THEMES.map(t=>`<button type="button" class="theme-opt" role="radio" aria-checked="false" data-theme-id="${t.id}"><span class="sw" style="background:${t.sw}"></span>${t.name}<small>${t.desc}</small></button>`).join('')}
-$('themes').onclick=async e=>{const b=e.target.closest('[data-theme-id]');if(!b)return;S.settings.theme=applyTheme(b.dataset.themeId);await save()};
 function stamp(){return todayISO().replace(/-/g,'')}
 async function exportBackup(){readLiveForm();await save();
 const body=JSON.stringify({app:'trip-mileage',version:1,exportedAt:new Date().toISOString(),data:{trips:S.trips,places:S.places,current:S.current,settings:S.settings}},null,1);
@@ -332,6 +311,5 @@ if(!S.settings||typeof S.settings!=='object')S.settings={};
 S.settings.profile=ExpenseSheet.profileOf(S.settings.profile);
 if(S.current&&!Array.isArray(S.current.stops))S.current.stops=[];
 if(S.current)S.current.form=Object.assign(defaultForm(),S.current.form);
-renderThemes();let saved='';try{saved=localStorage.getItem('theme')||''}catch(e){}applyTheme(S.settings.theme||saved);
 if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});render();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{})})();

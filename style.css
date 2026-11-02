@@ -268,7 +268,15 @@ th{color:var(--cyan);font-weight:700}
 .sum-route{font-size:.92rem;margin-top:2px}
 .sum-miss{font-size:.85rem;margin-top:2px}
 .card-body{padding:0 0 12px}
-.card-body .hint{margin:2px 0 0}
+.card-body .hint{margin:2px 0 4px;line-height:1.35}
+.pstops li{display:flex;align-items:center;gap:6px;padding:4px 0;border-top:1px dashed rgba(62,240,255,.22)}
+.pstops li:first-child{border-top:0}
+.pstops .namebtn{flex:1;min-width:0;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pstop-act{display:flex;gap:4px;flex:none}
+.pstop-act .mini{min-width:40px;padding:6px 8px}
+button:disabled{opacity:.35;cursor:default}
+.card-msg{margin:6px 0 0;color:var(--cyan);font-weight:700;font-size:.9rem}
+.card-msg:empty{display:none}
 .place{padding:8px 0;border-top:1px dashed rgba(62,240,255,.28)}
 .fixedmeta{margin:10px 0 0;color:var(--muted);font-size:.85rem;line-height:1.5}
 .fineprint{margin:0;color:#c5d7e6;font-size:.85rem}

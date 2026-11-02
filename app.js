@@ -60,18 +60,25 @@ try{const r=await (await ensureRouting()).computeTrip(st,{countRamps:false});
 const form=Object.assign(defaultForm(),S.current.form);
 const trip={id:Date.now(),date:form.date,stops:st,route:ExpenseSheet.placeText(st),total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km,legs:r.legs,roads:r.roads,polyline:r.polyline,form};
 S.trips.unshift(trip);S.current=null;await save();status('');render();showResult(trip)}catch(e){status(e.message||'路線計算失敗')}}
-// Re-routes a saved trip with the current rules. Stops and form fields stay as they are.
-async function recalc(trip){if(!lock())return;status('重新計算中…');
-try{const st=trip.stops||[];if(st.length<2)return status('至少需要兩個地點');
-const r=await (await ensureRouting()).computeTrip(st,{countRamps:false});
+// Messages for a pending trip show inside its card (the page status line is far up the page).
+const cardMsgs=new Map();
+function cardMsg(trip,t){cardMsgs.set(String(trip.id),t);const el=document.querySelector(`#pending [data-msg="${CSS.escape(String(trip.id))}"]`);if(el)el.textContent=t}
+// Routes `stops` for a saved trip and only then stores them with the new mileage, so a failed
+// request never leaves stops and kilometres out of step. ask: confirm when the export numbers change.
+async function reroute(trip,stops,opt){if(!lock())return;const say=t=>cardMsg(trip,t);say('重新計算中…');
+try{if(stops.length<2)return say('至少需要兩個地點');
+const r=await (await ensureRouting()).computeTrip(stops,{countRamps:false});
 const next={total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km};
-const oldWalk=walkOf(trip),newWalk=walkOf(next),oldTotal=ExpenseSheet.intText(trip.total_km),newTotal=ExpenseSheet.intText(r.total_km);
-const same=oldWalk===newWalk&&oldTotal===newTotal;
-if(!same&&!confirm(`重新計算結果\n總里程：${oldTotal} → ${newTotal} km\n行走里程：${oldWalk} → ${newWalk} km\n要更新這筆行程嗎？`))return status('已取消，保留原本的里程');
-Object.assign(trip,next,{legs:r.legs,roads:r.roads,polyline:r.polyline,route:ExpenseSheet.placeText(st)});
-await save();render();showResult(trip);
-status(same?'重新計算完成，報帳里程沒有變（已補上地圖與國道明細）':`已更新：總里程 ${newTotal} km，行走里程 ${newWalk} km`)}
-catch(e){status(e.message||'重新計算失敗')}finally{unlock()}}
+const k={oldWalk:walkOf(trip),newWalk:walkOf(next),oldTotal:ExpenseSheet.intText(trip.total_km),newTotal:ExpenseSheet.intText(r.total_km)};
+k.same=k.oldWalk===k.newWalk&&k.oldTotal===k.newTotal;
+if(opt.ask&&!k.same&&!confirm(`重新計算結果\n總里程：${k.oldTotal} → ${k.newTotal} km\n行走里程：${k.oldWalk} → ${k.newWalk} km\n要更新這筆行程嗎？`))return say('已取消，保留原本的里程');
+Object.assign(trip,next,{stops,legs:r.legs,roads:r.roads,polyline:r.polyline,route:ExpenseSheet.placeText(stops)});
+await save();render();if($('result').querySelector(`[data-trip="${CSS.escape(String(trip.id))}"]`))showResult(trip);
+say(opt.done(k))}
+catch(e){say(String(e.message||'重新計算失敗').replace(/行程已保留.*$/,'').trim()+(opt.ask?' 里程沒有變更，請稍後再試。':' 停靠點沒有變更，請稍後再試。'))}finally{unlock()}}
+const kmChange=k=>k.same?'里程沒有變':`總里程 ${k.oldTotal} → ${k.newTotal} km，行走里程 ${k.oldWalk} → ${k.newWalk} km`;
+// Re-routes a saved trip with the current rules. Stops and form fields stay as they are.
+function recalc(trip){return reroute(trip,(trip.stops||[]).slice(),{ask:true,done:k=>k.same?'重新計算完成，報帳里程沒有變（已補上地圖與國道明細）':`已更新：總里程 ${k.newTotal} km，行走里程 ${k.newWalk} km`})}
 function formFields(trip){const f=formOf(trip);const id=esc(trip.id);
 return `<div class="fields" data-trip="${id}">
 <label>公出日期<input type="date" data-k="date" value="${esc(f.date)}"></label>
@@ -131,13 +138,17 @@ $('pending').querySelectorAll('details[data-id]').forEach(d=>{if(d.open)openTrip
 const list=S.trips.slice().sort((a,b)=>String(formOf(b).date).localeCompare(String(formOf(a).date))||String(formOf(b).time).localeCompare(String(formOf(a).time))||b.id-a.id);
 renderPendingSum();
 $('pending').innerHTML=list.length?list.map(t=>`<li class="card" data-card="${id(t)}"><details data-id="${id(t)}"${openTrips.has(String(t.id))?' open':''}><summary>${tripSummary(t)}</summary><div class="card-body">
-<p class="hint">TAP STOP · 點站名改名</p><div class="row stops-edit">`+
-(t.stops||[]).map((s,i)=>`<button type="button" class="mini" data-act="renstop" data-id="${id(t)}" data-i="${i}">${esc(s.name)}</button>`).join('')+
-`</div>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${id(t)}">地圖與明細</button><button type="button" class="mini" data-act="recalc" data-id="${id(t)}">重新計算</button><button type="button" class="mini danger" data-act="del" data-id="${id(t)}">刪除</button></div></div></details></li>`).join(''):'<li class="sub">還沒有待報帳的行程</li>'}
+<p class="hint">TAP STOP · 點站名改名，刪除或調整順序後會自動重算里程</p><ol class="pstops">`+
+(t.stops||[]).map((s,i,all)=>`<li><button type="button" class="namebtn" data-act="renstop" data-id="${id(t)}" data-i="${i}">${i+1}. ${esc(s.name)}</button><span class="pstop-act">`+
+`<button type="button" class="mini" data-act="stopup" data-id="${id(t)}" data-i="${i}" aria-label="往上"${i?'':' disabled'}>↑</button>`+
+`<button type="button" class="mini" data-act="stopdown" data-id="${id(t)}" data-i="${i}" aria-label="往下"${i<all.length-1?'':' disabled'}>↓</button>`+
+`<button type="button" class="mini danger" data-act="stopdel" data-id="${id(t)}" data-i="${i}"${all.length>2?'':' disabled title="至少要有兩個點"'}>刪除</button></span></li>`).join('')+
+`</ol><p class="card-msg" data-msg="${id(t)}">${esc(cardMsgs.get(String(t.id))||'')}</p>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${id(t)}">地圖與明細</button><button type="button" class="mini" data-act="recalc" data-id="${id(t)}">重新計算</button><button type="button" class="mini danger" data-act="del" data-id="${id(t)}">刪除整筆</button></div></div></details></li>`).join(''):'<li class="sub">還沒有待報帳的行程</li>'}
 // Keeps the closed line in step while fields are edited, without re-sorting under the finger.
 function refreshSummary(trip){const sum=document.querySelector(`#pending [data-card="${CSS.escape(String(trip.id))}"] summary`);if(sum)sum.innerHTML=tripSummary(trip);renderPendingSum()}
 function renderPendingSum(){const list=S.trips,todo=list.filter(t=>missingFields(formOf(t)).length).length,total=list.reduce((n,t)=>n+Number(ExpenseSheet.intText(t.total_km)),0),walk=list.reduce((n,t)=>n+walkOf(t),0);
-$('pendingSum').innerHTML=list.length?`${list.length} 筆・總里程 ${total} km・行走 ${walk} km`+(todo?`<span class="warn">・${todo} 筆待填</span>`:''):''}function renderSetup(){const miss=ExpenseSheet.missingProfile(S.settings.profile);$('setupBox').hidden=!miss.length;$('setupMissing').textContent=miss.join('、');return miss}
+$('pendingSum').innerHTML=list.length?`${list.length} 筆・總里程 ${total} km・行走 ${walk} km`+(todo?`<span class="warn">・${todo} 筆待填</span>`:''):''}
+function renderSetup(){const miss=ExpenseSheet.missingProfile(S.settings.profile);$('setupBox').hidden=!miss.length;$('setupMissing').textContent=miss.join('、');return miss}
 const PROFILE_INPUTS={受款人:'setPayee',工號:'setEmp',車號:'setCar'};
 function goSetup(){const miss=renderSetup();$('settingsBox').scrollIntoView({block:'start'});const el=$(PROFILE_INPUTS[miss[0]]);if(el)setTimeout(()=>el.focus({preventScroll:true}),350)}
 function readProfile(){S.settings.profile=ExpenseSheet.profileOf({payee:$('setPayee').value,empId:$('setEmp').value,carNo:$('setCar').value,fuel:$('setFuel').value});save();renderSetup()}
@@ -171,6 +182,11 @@ $('pending').onclick=async e=>{const btn=e.target.closest('button');if(!btn||!$(
 const trip=S.trips.find(t=>String(t.id)===id);if(!trip)return;
 if(act==='detail'){showResult(trip);$('result').scrollIntoView({block:'start'})}
 if(act==='recalc')await recalc(trip);
+if(act==='stopdel'||act==='stopup'||act==='stopdown'){const i=+btn.dataset.i,st=(trip.stops||[]).slice(),s=st[i];if(!s)return;
+if(act==='stopdel'){if(st.length<=2)return cardMsg(trip,'至少要有兩個點，不能再刪');if(!confirm(`刪除「${s.name}」？會重新計算這筆行程的里程。`))return;st.splice(i,1);
+await reroute(trip,st,{done:k=>`已刪除「${s.name}」。${kmChange(k)}`})}
+else{const j=act==='stopup'?i-1:i+1;if(!st[j])return;[st[i],st[j]]=[st[j],st[i]];
+await reroute(trip,st,{done:k=>`已調整順序。${kmChange(k)}`})}}
 if(act==='renstop'){const i=+btn.dataset.i;const n=clean(prompt('停靠點名稱',trip.stops[i]&&trip.stops[i].name)||'');if(n&&trip.stops[i]){trip.stops[i].name=n;trip.stops[i].renamed=true;trip.route=ExpenseSheet.placeText(trip.stops);await save();render();if($('result').querySelector(`[data-trip="${CSS.escape(id)}"]`))showResult(trip)}}
 if(act==='del'&&confirm('刪除此待報帳行程？')){S.trips=S.trips.filter(t=>String(t.id)!==id);if($('result').querySelector(`[data-trip="${CSS.escape(id)}"]`))$('result').innerHTML='';await save();render()}};
 $('places').onclick=async e=>{const btn=e.target.closest('button');if(!btn||btn.dataset.p===undefined)return;S.places.splice(+btn.dataset.p,1);await save();render()};

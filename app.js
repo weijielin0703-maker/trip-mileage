@@ -49,16 +49,21 @@ function locate(){if(!navigator.geolocation)return Promise.reject(new Error('此
 const once=high=>new Promise((ok,no)=>{navigator.geolocation.getCurrentPosition(pos=>ok(geoPoint(pos)),no,{enableHighAccuracy:high,timeout:20000,maximumAge:high?0:15000})});
 return once(true).catch(e=>{if(e&&e.code===1)throw geoError(e);return once(false).catch(e2=>{throw geoError(e2)})})}
 async function recordHere(){if(!lock())return;const pending=locate();try{status('定位中…');const p=await pending;await addStop(p);status(`已記錄（誤差約 ${p.accuracy} m）`)}catch(e){status(e.message)}finally{unlock()}}
+// routing.js can miss the page load (bad signal, mid-deploy). Fetch it again, past every cache, before giving up.
+function ensureRouting(){if(window.Routing)return Promise.resolve(window.Routing);
+return new Promise((ok,no)=>{const s=document.createElement('script');s.src='./routing.js?r='+Date.now();
+s.onload=()=>window.Routing?ok(window.Routing):no(new Error('路線模組載入失敗（'+scriptFailures()+'）。請關掉 app 再重新開啟。'));
+s.onerror=()=>no(new Error('路線模組下載失敗，請確認網路後再按「只計算」。行程已保留。'));document.head.appendChild(s)})}
+function scriptFailures(){return (window.__failedScripts||[]).join('、')||'原因不明'}
 async function calc(){if(!S.current)return status('目前沒有進行中的行程');readLiveForm();status('路線計算中…');await waitGeo();if(!S.current)return;const st=S.current.stops;if(!st||st.length<2)return status('至少需要兩個地點');status('路線計算中…');
-try{if(typeof Routing==='undefined')throw new Error('路線模組未載入');
-const r=await Routing.computeTrip(st,{countRamps:false});
+try{const r=await (await ensureRouting()).computeTrip(st,{countRamps:false});
 const form=Object.assign(defaultForm(),S.current.form);
 const trip={id:Date.now(),date:form.date,stops:st,route:ExpenseSheet.placeText(st),total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km,legs:r.legs,roads:r.roads,polyline:r.polyline,form};
 S.trips.unshift(trip);S.current=null;await save();status('');render();showResult(trip)}catch(e){status(e.message||'路線計算失敗')}}
 // Re-routes a saved trip with the current rules. Stops and form fields stay as they are.
 async function recalc(trip){if(!lock())return;status('重新計算中…');
 try{const st=trip.stops||[];if(st.length<2)return status('至少需要兩個地點');
-const r=await Routing.computeTrip(st,{countRamps:false});
+const r=await (await ensureRouting()).computeTrip(st,{countRamps:false});
 const next={total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km};
 const oldWalk=walkOf(trip),newWalk=walkOf(next),oldTotal=ExpenseSheet.intText(trip.total_km),newTotal=ExpenseSheet.intText(r.total_km);
 const same=oldWalk===newWalk&&oldTotal===newTotal;

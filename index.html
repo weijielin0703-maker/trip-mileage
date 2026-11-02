@@ -17,6 +17,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <title>出差里程</title>
 <link rel="stylesheet" href="./style.css">
+<script>
+// Remembers scripts that failed to load or threw, so error messages can name them.
+window.__failedScripts=[];
+addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')__failedScripts.push(t.src.split('/').pop()+' 下載失敗');else if(e.filename)__failedScripts.push(e.filename.split('/').pop()+'：'+e.message)},true);
+</script>
 </head>
 <body>
 <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>

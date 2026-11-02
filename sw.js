@@ -1,6 +1,6 @@
 // Paths are resolved against the service worker scope, so /trip-mileage/ works
 // the same as hosting at the domain root. Do not prefix these with "/".
-const CACHE = 'trip-v10';
+const CACHE = 'trip-v11';
 const FILES = ['./', './index.html', './app.js', './routing.js', './geocode.js', './expense-sheet.js', './style.css', './manifest.json', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png', './company-template.xls', './vendor/xlsx.full.min.js', './vendor/leaflet/leaflet.js', './vendor/leaflet/leaflet.css'];
 
 function scoped(path) {
@@ -36,23 +36,32 @@ self.addEventListener('activate', event => {
   })());
 });
 
+// Network first. The cached copy is used when the network fails or answers with an error page
+// (e.g. mid-deploy), and a failed cache write never fails the response itself.
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || event.request.method !== 'GET') return;
   const scopePath = new URL(self.registration.scope).pathname;
   if (!url.pathname.startsWith(scopePath)) return;
   event.respondWith((async () => {
+    const cached = () => caches.match(event.request, {ignoreSearch: true}).then(hit => hit || (event.request.mode === 'navigate' ? caches.match(scoped('./')) : null));
+    let res;
     try {
-      const res = await fetch(event.request);
-      if (res.status === 200 && res.type === 'basic') {
-        const cache = await caches.open(CACHE);
-        await putFresh(cache, event.request, res.clone());
-      }
-      return res;
+      res = await fetch(event.request);
     } catch (e) {
-      const cached = await caches.match(event.request) || (event.request.mode === 'navigate' ? await caches.match(scoped('./')) : null);
-      if (cached) return cached;
+      const hit = await cached();
+      if (hit) return hit;
       throw e;
     }
+    if (res.status === 200 && res.type === 'basic') {
+      const copy = res.clone();
+      event.waitUntil(caches.open(CACHE).then(cache => putFresh(cache, event.request, copy)).catch(() => {}));
+      return res;
+    }
+    if (res.status >= 400) {
+      const hit = await cached();
+      if (hit) return hit;
+    }
+    return res;
   })());
 });

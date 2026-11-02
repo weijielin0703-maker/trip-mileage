@@ -54,6 +54,18 @@ const r=await Routing.computeTrip(st,{countRamps:false});
 const form=Object.assign(defaultForm(),S.current.form);
 const trip={id:Date.now(),date:form.date,stops:st,route:ExpenseSheet.placeText(st),total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km,legs:r.legs,roads:r.roads,polyline:r.polyline,form};
 S.trips.unshift(trip);S.current=null;await save();status('');render();showResult(trip)}catch(e){status(e.message||'路線計算失敗')}}
+// Re-routes a saved trip with the current rules. Stops and form fields stay as they are.
+async function recalc(trip){if(!lock())return;status('重新計算中…');
+try{const st=trip.stops||[];if(st.length<2)return status('至少需要兩個地點');
+const r=await Routing.computeTrip(st,{countRamps:false});
+const next={total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km};
+const oldWalk=walkOf(trip),newWalk=walkOf(next),oldTotal=ExpenseSheet.intText(trip.total_km),newTotal=ExpenseSheet.intText(r.total_km);
+const same=oldWalk===newWalk&&oldTotal===newTotal;
+if(!same&&!confirm(`重新計算結果\n總里程：${oldTotal} → ${newTotal} km\n行走里程：${oldWalk} → ${newWalk} km\n要更新這筆行程嗎？`))return status('已取消，保留原本的里程');
+Object.assign(trip,next,{legs:r.legs,roads:r.roads,polyline:r.polyline,route:ExpenseSheet.placeText(st)});
+await save();render();showResult(trip);
+status(same?'重新計算完成，報帳里程沒有變（已補上地圖與國道明細）':`已更新：總里程 ${newTotal} km，行走里程 ${newWalk} km`)}
+catch(e){status(e.message||'重新計算失敗')}finally{unlock()}}
 function formFields(trip){const f=formOf(trip);const id=esc(trip.id);
 return `<div class="fields" data-trip="${id}">
 <label>公出日期<input type="date" data-k="date" value="${esc(f.date)}"></label>
@@ -94,7 +106,7 @@ $('stops').innerHTML=c?(c.stops.length?c.stops.map((s,i)=>`<li class="arrival"><
 if(c)fillLiveForm();
 $('pending').innerHTML=S.trips.length?S.trips.map(t=>{const f=formOf(t);return `<li class="card" data-trip="${esc(t.id)}"><h3>${esc(f.date)} ${esc(timeLabel(f.time))}</h3><div>${esc(t.route||ExpenseSheet.placeText(t.stops))}</div><span class="sub">總里程 ${esc(t.total_km)} km／行走里程 ${walkOf(t)} km${f.client?'／'+esc(f.client):''}</span><div class="row stops-edit">`+
 (t.stops||[]).map((s,i)=>`<button type="button" class="mini" data-act="renstop" data-id="${esc(t.id)}" data-i="${i}">${esc(s.name)}</button>`).join('')+
-`</div>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${esc(t.id)}">明細</button><button type="button" class="mini danger" data-act="del" data-id="${esc(t.id)}">刪除</button></div></li>`}).join(''):'<li class="sub">還沒有待報帳的行程</li>';
+`</div>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${esc(t.id)}">明細</button><button type="button" class="mini" data-act="recalc" data-id="${esc(t.id)}">重新計算</button><button type="button" class="mini danger" data-act="del" data-id="${esc(t.id)}">刪除</button></div></li>`}).join(''):'<li class="sub">還沒有待報帳的行程</li>';
 $('places').innerHTML=S.places.map((p,i)=>`<li class="place"><b>${esc(p.name)}</b> <span class="sub">${p.lat.toFixed(4)},${p.lng.toFixed(4)}</span> <button type="button" class="mini danger" data-p="${i}">刪除</button></li>`).join('')||'<li class="sub">在行程中按「存為常用」新增（300 m 內自動套用名稱）</li>';
 const p=profile();S.settings.profile=p;
 fillIfIdle($('setPayee'),p.payee);fillIfIdle($('setEmp'),p.empId);fillIfIdle($('setCar'),p.carNo);fillIfIdle($('setFuel'),p.fuel);
@@ -132,6 +144,7 @@ await save();render()};
 $('pending').onclick=async e=>{const btn=e.target.closest('button');if(!btn||!$('pending').contains(btn))return;const id=btn.dataset.id,act=btn.dataset.act;if(!act)return;
 const trip=S.trips.find(t=>String(t.id)===id);if(!trip)return;
 if(act==='detail')showResult(trip);
+if(act==='recalc')await recalc(trip);
 if(act==='renstop'){const i=+btn.dataset.i;const n=clean(prompt('停靠點名稱',trip.stops[i]&&trip.stops[i].name)||'');if(n&&trip.stops[i]){trip.stops[i].name=n;trip.stops[i].renamed=true;trip.route=ExpenseSheet.placeText(trip.stops);await save();render();if($('result').querySelector(`[data-trip="${CSS.escape(id)}"]`))showResult(trip)}}
 if(act==='del'&&confirm('刪除此待報帳行程？')){S.trips=S.trips.filter(t=>String(t.id)!==id);if($('result').querySelector(`[data-trip="${CSS.escape(id)}"]`))$('result').innerHTML='';await save();render()}};
 $('places').onclick=async e=>{const btn=e.target.closest('button');if(!btn||btn.dataset.p===undefined)return;S.places.splice(+btn.dataset.p,1);await save();render()};

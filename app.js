@@ -87,9 +87,11 @@ return `<div class="fields" data-trip="${id}">
 <label>事由<input type="text" data-k="reason" value="${esc(f.reason)}" autocomplete="off"></label>
 <label>停車費<input type="number" data-k="parking" value="${esc(f.parking)}" inputmode="decimal" step="1" placeholder="空白為 0"></label>
 </div>`}
+// "國道・國道3號" under a road, so a section named after a bridge (景美溪橋) shows which freeway it belongs to.
+function roadKind(r){if(r.kind==='ramp')return '交流道／匝道';const fw=window.Routing&&Routing.freewayLabel(r.ref);return '國道'+(fw?'・'+fw:'')}
 function roadsTable(t){if(!Array.isArray(t.roads))return '<p class="sub">這趟是舊版算的，沒有國道明細。</p>';
 if(!t.roads.length)return '<p class="sub">這趟沒有走國道。</p>';
-return `<table class="roads"><tr><th>計入行走里程的道路</th><th>km</th></tr>`+t.roads.map(r=>`<tr><td>${esc(r.name)}<span class="sub">${r.kind==='ramp'?'交流道／匝道':'國道'}</span></td><td>${esc(r.km)}</td></tr>`).join('')+`</table><p class="sub">可以和 Google 地圖的路線對照，路名不對時代表判斷有誤。</p>`}
+return `<table class="roads"><tr><th>計入行走里程的道路</th><th>km</th></tr>`+t.roads.map(r=>`<tr><td>${esc(r.name)}<span class="sub">${roadKind(r)}</span></td><td>${esc(r.km)}</td></tr>`).join('')+`</table><p class="sub">可以和 Google 地圖的路線對照，路名不對時代表判斷有誤。</p>`}
 function showResult(t){const walk=walkOf(t);
 $('result').innerHTML=`<div class="log" data-trip="${esc(t.id)}"><div class="hud"><div class="hud-cell"><div class="hud-lab">TOTAL</div><div class="hud-num">${esc(t.total_km)}</div><div class="hud-unit">總里程 km</div></div><div class="hud-cell alt"><div class="hud-lab">FREEWAY</div><div class="hud-num">${esc(walk)}</div><div class="hud-unit">行走里程 km</div></div></div><p class="sub">匯出日總里程 ${ExpenseSheet.intText(t.total_km)}，行走里程 ${walk}（國道 ${esc(t.freeway_km)}＋交流道／匝道 ${esc(t.ramp_km)}，四捨五入）</p><div class="map" id="map" role="img" aria-label="路線地圖"></div><p class="sub" id="mapNote"></p><table><tr><th>路段</th><th>km</th><th>國道</th></tr>`+
 (t.legs||[]).map(l=>`<tr><td>${esc(l.from)} → ${esc(l.to)}</td><td>${esc(l.km)}</td><td>${esc(l.freeway_km)}</td></tr>`).join('')+

@@ -8,7 +8,7 @@
   const EXPRESSWAY = /^(台|臺)?\s*(6[1-8]|7[2-8]|8[2-8])(甲|乙)?$/; // 快速公路 台61~台88
   // Public OSRM omits intersection classes, so isMotorway() usually stays false.
   // These national freeways are named without 國道/高速公路 in OpenStreetMap.
-  const FREEWAY_NAMES = /機場支線|高雄支線|台中環線|臺中環線|汐止五股高架|五股楊梅高架/;
+  const FREEWAY_NAMES = /機場支線|高雄支線|台中環線|臺中環線|汐止五股高架|五股楊梅高架|台北聯絡線|臺北聯絡線/;
   // Maneuvers that keep you on the same carriageway. A turn means you left it.
   const THROUGH = new Set(['new name', 'continue', 'merge', 'fork', 'notification']);
   const isMotorway = s => (s.intersections || []).some(i => (i.classes || []).includes('motorway'));
@@ -128,7 +128,14 @@
     const line = r.geometry.coordinates.map(([x, y]) => [y, x]);
     return { total_km: rd(r.distance), freeway_km: rd(fw + (countRamps ? rp : 0)), ramp_km: rd(rp), legs, roads: roadList, polyline: simplify(line, 1e-4), server: base };
   }
-  const api = { computeTrip, classify, classifySteps, simplify, SERVERS };
+  // "國道3號" / "國道3號甲線" for a freeway ref, so bridges and viaducts named after a river still say which freeway they are.
+  function freewayLabel(ref) {
+    const r = refs({ ref }).find(x => FREEWAY_REFS.has(x.replace(/^國道?/, '')));
+    if (!r) return '';
+    const m = r.replace(/^國道?/, '').match(/^(\d+)(甲|乙)?$/);
+    return m ? '國道' + m[1] + '號' + (m[2] ? m[2] + '線' : '') : '';
+  }
+  const api = { computeTrip, classify, classifySteps, simplify, freewayLabel, SERVERS };
   root.Routing = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(this);

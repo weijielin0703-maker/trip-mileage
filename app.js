@@ -145,7 +145,7 @@ $('pending').innerHTML=list.length?list.map(t=>`<li class="card" data-card="${id
 `<button type="button" class="mini" data-act="stopup" data-id="${id(t)}" data-i="${i}" aria-label="往上"${i?'':' disabled'}>↑</button>`+
 `<button type="button" class="mini" data-act="stopdown" data-id="${id(t)}" data-i="${i}" aria-label="往下"${i<all.length-1?'':' disabled'}>↓</button>`+
 `<button type="button" class="mini danger" data-act="stopdel" data-id="${id(t)}" data-i="${i}"${all.length>2?'':' disabled title="至少要有兩個點"'}>刪除</button></span></li>`).join('')+
-`</ol><p class="card-msg" data-msg="${id(t)}">${esc(cardMsgs.get(String(t.id))||'')}</p>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${id(t)}">地圖與明細</button><button type="button" class="mini" data-act="recalc" data-id="${id(t)}">重新計算</button><button type="button" class="mini danger" data-act="del" data-id="${id(t)}">刪除整筆</button></div></div></details></li>`).join(''):'<li class="sub">還沒有待報帳的行程</li>'}
+`</ol><p class="card-msg" data-msg="${id(t)}">${esc(cardMsgs.get(String(t.id))||'')}</p>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${id(t)}">地圖與明細</button><button type="button" class="mini" data-act="recalc" data-id="${id(t)}">重新計算</button><button type="button" class="mini" data-act="reopen" data-id="${id(t)}">補加停靠點</button><button type="button" class="mini danger" data-act="del" data-id="${id(t)}">刪除整筆</button></div></div></details></li>`).join(''):'<li class="sub">還沒有待報帳的行程</li>'}
 // Keeps the closed line in step while fields are edited, without re-sorting under the finger.
 function refreshSummary(trip){const sum=document.querySelector(`#pending [data-card="${CSS.escape(String(trip.id))}"] summary`);if(sum)sum.innerHTML=tripSummary(trip);renderPendingSum()}
 function renderPendingSum(){const list=S.trips,todo=list.filter(t=>missingFields(formOf(t)).length).length,total=list.reduce((n,t)=>n+Number(ExpenseSheet.intText(t.total_km)),0),walk=list.reduce((n,t)=>n+walkOf(t),0);
@@ -184,6 +184,11 @@ $('pending').onclick=async e=>{const btn=e.target.closest('button');if(!btn||!$(
 const trip=S.trips.find(t=>String(t.id)===id);if(!trip)return;
 if(act==='detail'){showResult(trip);$('result').scrollIntoView({block:'start'})}
 if(act==='recalc')await recalc(trip);
+// Back to the live trip, where search, map pick and ↑↓ can add a forgotten stop; 只計算 saves it again.
+if(act==='reopen'){if(S.current)return cardMsg(trip,'目前已有進行中的行程，請先計算或放棄它，再來補加');
+if(!confirm('把這筆改回進行中？\n可以用搜尋或地圖補加停靠點，再用 ↑ 移到正確位置，補完按「只計算」重新算里程。'))return;
+S.current={stops:(trip.stops||[]).map(s=>Object.assign({},s)),form:Object.assign(defaultForm(),trip.form)};S.trips=S.trips.filter(t=>t!==trip);
+if($('result').querySelector(`[data-trip="${CSS.escape(id)}"]`))$('result').innerHTML='';await save();render();status('已改回進行中，補加停靠點後按「只計算」');$('trip').scrollIntoView({block:'start'})}
 if(act==='stopdel'||act==='stopup'||act==='stopdown'){const i=+btn.dataset.i,st=(trip.stops||[]).slice(),s=st[i];if(!s)return;
 if(act==='stopdel'){if(st.length<=2)return cardMsg(trip,'至少要有兩個點，不能再刪');if(!confirm(`刪除「${s.name}」？會重新計算這筆行程的里程。`))return;st.splice(i,1);
 await reroute(trip,st,{done:k=>`已刪除「${s.name}」。${kmChange(k)}`})}

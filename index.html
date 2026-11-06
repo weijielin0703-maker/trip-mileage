@@ -96,6 +96,7 @@ addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')_
   <label>事由<input id="fReason" type="text" data-k="reason" autocomplete="off" placeholder="事由"></label>
   <label>停車費<input id="fPark" type="number" data-k="parking" inputmode="decimal" step="1" placeholder="空白為 0"></label>
  </div>
+ <div id="liveInv"></div>
  <button type="button" id="btnEnd" class="big mag"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-house" xlink:href="#i-house"/></svg>結束並計算（記錄目前位置）</button>
  <div class="row"><button type="button" id="btnCalc">只計算（不加點）</button><button type="button" id="btnCancel" class="danger">放棄行程</button></div>
 </div>
@@ -133,6 +134,7 @@ addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')_
 <script src="./routing.js"></script>
 <script src="./geocode.js"></script>
 <script src="./expense-sheet.js"></script>
+<script src="./invoice.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>

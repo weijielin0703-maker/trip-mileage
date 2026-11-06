@@ -116,7 +116,30 @@
       ws[addr].v = String(ws[addr].v ?? '');
       ws[addr].z = '@';
     });
+    appendInvoices(wb, trips, XLSX);
     return wb;
   }
-  return { FIXED, DEFAULT_PROFILE, FUELS, clean, intText, parkingText, timeText, placeText, walkKm, profileOf, missingProfile, rowFor, fillWorkbook };
+  // A separate 停車發票 sheet, so the import page keeps the company's A-I columns.
+  const INVOICE_SHEET = '停車發票';
+  function invoiceRows(trips) {
+    const rows = [];
+    trips.forEach(trip => {
+      const f = Object.assign({ date: '', client: '' }, trip.form || {});
+      (trip.invoices || []).forEach(v => rows.push([dateText(f.date), clean(f.client), v.no, v.date || '', Number(v.amount) || 0, v.buyer || '', v.seller || '']));
+    });
+    return rows;
+  }
+  function appendInvoices(wb, trips, XLSX) {
+    const rows = invoiceRows(trips);
+    if (wb.Sheets[INVOICE_SHEET]) {
+      delete wb.Sheets[INVOICE_SHEET];
+      wb.SheetNames = wb.SheetNames.filter(n => n !== INVOICE_SHEET);
+    }
+    if (!rows.length) return;
+    const total = rows.reduce((n, r) => n + r[4], 0);
+    const ws = XLSX.utils.aoa_to_sheet([['公出日期', '洽公對象', '發票號碼', '發票日期', '金額', '買方統編', '賣方統編']].concat(rows, [['', '', '', '合計', total, '', '']]));
+    ws['!cols'] = [12, 16, 14, 12, 8, 11, 11].map(wch => ({ wch: wch }));
+    XLSX.utils.book_append_sheet(wb, ws, INVOICE_SHEET);
+  }
+  return { FIXED, DEFAULT_PROFILE, FUELS, clean, intText, parkingText, timeText, placeText, walkKm, profileOf, missingProfile, rowFor, invoiceRows, fillWorkbook };
 });

@@ -286,3 +286,10 @@ button:disabled{opacity:.35;cursor:default}
   .aurora span{animation:none}
   button:active,.btn:active{transform:none}
 }
+.inv{margin:10px 0;padding:10px;background:rgba(4,12,24,.4);border:1px solid rgba(62,240,255,.28);border-radius:4px 14px}
+.inv-head{color:var(--muted);font-size:.95rem}
+.inv-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px dashed rgba(62,240,255,.22);font-size:.92rem}
+.inv-list li:first-child{border-top:0}
+.inv-list .mini{flex:none;min-width:56px}
+.inv .row{margin-bottom:0}
+.inv label.btn{display:inline-flex;align-items:center;margin:0;color:var(--ink);font-size:16px}

@@ -1,7 +1,7 @@
 // Paths are resolved against the service worker scope, so /trip-mileage/ works
 // the same as hosting at the domain root. Do not prefix these with "/".
-const CACHE = 'trip-v16';
-const FILES = ['./', './index.html', './app.js', './routing.js', './geocode.js', './expense-sheet.js', './style.css', './manifest.json', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png', './company-template.xls', './vendor/xlsx.full.min.js', './vendor/leaflet/leaflet.js', './vendor/leaflet/leaflet.css'];
+const CACHE = 'trip-v17';
+const FILES = ['./', './index.html', './app.js', './routing.js', './geocode.js', './expense-sheet.js', './invoice.js', './vendor/jsQR.js', './style.css', './manifest.json', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png', './company-template.xls', './vendor/xlsx.full.min.js', './vendor/leaflet/leaflet.js', './vendor/leaflet/leaflet.css'];
 
 function scoped(path) {
   return new URL(path, self.registration.scope).href;

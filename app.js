@@ -58,7 +58,7 @@ function scriptFailures(){return (window.__failedScripts||[]).join('、')||'原�
 async function calc(){if(!S.current)return status('目前沒有進行中的行程');readLiveForm();status('路線計算中…');await waitGeo();if(!S.current)return;const st=S.current.stops;if(!st||st.length<2)return status('至少需要兩個地點');status('路線計算中…');
 try{const r=await (await ensureRouting()).computeTrip(st,{countRamps:false});
 const form=Object.assign(defaultForm(),S.current.form);
-const trip={id:Date.now(),date:form.date,stops:st,route:ExpenseSheet.placeText(st),total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km,legs:r.legs,roads:r.roads,polyline:r.polyline,form};
+const trip={id:Date.now(),date:form.date,stops:st,route:ExpenseSheet.placeText(st),total_km:r.total_km,freeway_km:r.freeway_km,ramp_km:r.ramp_km,legs:r.legs,roads:r.roads,polyline:r.polyline,form,invoices:S.current.invoices||[]};
 S.trips.unshift(trip);S.current=null;await save();status('');render();showResult(trip)}catch(e){status(e.message||'路線計算失敗')}}
 // Messages for a pending trip show inside its card (the page status line is far up the page).
 const cardMsgs=new Map();
@@ -76,6 +76,34 @@ Object.assign(trip,next,{stops,legs:r.legs,roads:r.roads,polyline:r.polyline,rou
 await save();render();if($('result').querySelector(`[data-trip="${CSS.escape(String(trip.id))}"]`))showResult(trip);
 say(opt.done(k))}
 catch(e){say(String(e.message||'重新計算失敗').replace(/行程已保留.*$/,'').trim()+(opt.ask?' 里程沒有變更，請稍後再試。':' 停靠點沒有變更，請稍後再試。'))}finally{unlock()}}
+// Parking invoices of the live trip ('live') or a pending trip (its id). Photos are read, not kept.
+function invoiceBlock(owner,key){const list=owner.invoices||[];
+return `<div class="inv" data-inv="${esc(key)}"><div class="inv-head">停車發票</div>`+(list.length?`<ul class="inv-list">`+list.map((v,i)=>`<li><span><b>${esc(v.no)}</b>　${esc(v.amount)} 元<span class="sub">　${esc(v.date||'')}　</span>`+(v.buyer?`<span class="sub">統編 ${esc(v.buyer)}</span>`:`<span class="warn">沒有打統編</span>`)+`</span><button type="button" class="mini danger" data-invdel="${i}">刪除</button></li>`).join('')+`</ul>`:'')+
+`<div class="row"><label class="btn mini">拍照辨識<input type="file" accept="image/*" data-invfile hidden></label><button type="button" class="mini" data-invadd>手動輸入</button></div></div>`}
+function invoiceOwner(el){const box=el.closest('[data-inv]');if(!box)return null;const k=box.dataset.inv;
+const owner=k==='live'?S.current:S.trips.find(t=>String(t.id)===k);if(!owner)return null;
+return{owner,say:k==='live'?status:t=>cardMsg(owner,t)}}
+const invSum=list=>list.reduce((n,v)=>n+(Number(v.amount)||0),0);
+// The parking fee follows the invoices until it is typed by hand.
+async function setInvoices(owner,list){if(owner===S.current)readLiveForm();owner.form=Object.assign(defaultForm(),owner.form);
+const fee=clean(owner.form.parking),before=invSum(owner.invoices||[]);
+if(!fee||Number(fee)===before)owner.form.parking=list.length?String(invSum(list)):'';
+owner.invoices=list;await save();render()}
+async function addInvoice(o,v){const list=(o.owner.invoices||[]).slice();
+if(list.some(x=>x.no===v.no))return o.say(`發票 ${v.no} 已經加過了`);
+list.push(v);await setInvoices(o.owner,list);
+o.say(`已加入發票 ${v.no}，${v.amount} 元`+(v.buyer?'':'（這張沒有打統編）'))}
+document.addEventListener('change',async e=>{const el=e.target;if(!el.matches||!el.matches('[data-invfile]'))return;
+const f=el.files&&el.files[0];el.value='';const o=invoiceOwner(el);if(!f||!o)return;
+o.say('辨識發票中…');
+try{const v=await Invoice.read(f);if(!v)return o.say('找不到電子發票的 QR code。請拍清楚左邊那個 QR code，或改用「手動輸入」');await addInvoice(o,v)}
+catch(err){o.say(err.message||'辨識失敗，請改用「手動輸入」')}});
+document.addEventListener('click',async e=>{const btn=e.target.closest&&e.target.closest('[data-invadd],[data-invdel]');if(!btn)return;const o=invoiceOwner(btn);if(!o)return;
+if(btn.dataset.invdel!==undefined){const list=(o.owner.invoices||[]).slice(),v=list[+btn.dataset.invdel];if(!v||!confirm(`刪除發票 ${v.no}？`))return;list.splice(+btn.dataset.invdel,1);await setInvoices(o.owner,list);return o.say(`已刪除發票 ${v.no}`)}
+const no=Invoice.normalizeNo(prompt('發票號碼（例如 AB12345678）')||'');if(!no)return o.say('發票號碼要是 2 個英文字母加 8 個數字');
+const amount=Math.round(Number(clean(prompt('金額（元）')||'')));if(!(amount>0))return o.say('金額要填大於 0 的數字');
+const buyer=clean(prompt('買方統編（發票上沒有就留空白）')||'');if(buyer&&!/^\d{8}$/.test(buyer))return o.say('統編要是 8 個數字');
+await addInvoice(o,{no,date:formOf(o.owner).date,amount,buyer,seller:''})});
 const kmChange=k=>k.same?'里程沒有變':`總里程 ${k.oldTotal} → ${k.newTotal} km，行走里程 ${k.oldWalk} → ${k.newWalk} km`;
 // Re-routes a saved trip with the current rules. Stops and form fields stay as they are.
 function recalc(trip){return reroute(trip,(trip.stops||[]).slice(),{ask:true,done:k=>k.same?'重新計算完成，報帳里程沒有變（已補上地圖與國道明細）':`已更新：總里程 ${k.newTotal} km，行走里程 ${k.newWalk} km`})}
@@ -119,6 +147,7 @@ $('stops').innerHTML=c?(c.stops.length?c.stops.map((s,i)=>`<li class="arrival"><
 <button type="button" class="mini" data-a="up" data-i="${i}">↑</button><button type="button" class="mini" data-a="down" data-i="${i}">↓</button>
 <button type="button" class="mini" data-a="fav" data-i="${i}">存為常用</button><button type="button" class="mini danger" data-a="del" data-i="${i}">刪除</button></div></li>`).join(''):'<li class="sub">還沒有抵達紀錄。點名稱可改名。</li>'):'';
 if(c)fillLiveForm();
+$('liveInv').innerHTML=c?invoiceBlock(c,'live'):'';
 renderPending();
 $('places').innerHTML=S.places.map((p,i)=>`<li class="place"><b>${esc(p.name)}</b> <span class="sub">${p.lat.toFixed(4)},${p.lng.toFixed(4)}</span> <button type="button" class="mini danger" data-p="${i}">刪除</button></li>`).join('')||'<li class="sub">在行程中按「存為常用」新增（300 m 內自動套用名稱）</li>';
 const p=profile();S.settings.profile=p;
@@ -145,7 +174,7 @@ $('pending').innerHTML=list.length?list.map(t=>`<li class="card" data-card="${id
 `<button type="button" class="mini" data-act="stopup" data-id="${id(t)}" data-i="${i}" aria-label="往上"${i?'':' disabled'}>↑</button>`+
 `<button type="button" class="mini" data-act="stopdown" data-id="${id(t)}" data-i="${i}" aria-label="往下"${i<all.length-1?'':' disabled'}>↓</button>`+
 `<button type="button" class="mini danger" data-act="stopdel" data-id="${id(t)}" data-i="${i}"${all.length>2?'':' disabled title="至少要有兩個點"'}>刪除</button></span></li>`).join('')+
-`</ol><p class="card-msg" data-msg="${id(t)}">${esc(cardMsgs.get(String(t.id))||'')}</p>`+formFields(t)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${id(t)}">地圖與明細</button><button type="button" class="mini" data-act="recalc" data-id="${id(t)}">重新計算</button><button type="button" class="mini" data-act="reopen" data-id="${id(t)}">補加停靠點</button><button type="button" class="mini danger" data-act="del" data-id="${id(t)}">刪除整筆</button></div></div></details></li>`).join(''):'<li class="sub">還沒有待報帳的行程</li>'}
+`</ol><p class="card-msg" data-msg="${id(t)}">${esc(cardMsgs.get(String(t.id))||'')}</p>`+formFields(t)+invoiceBlock(t,t.id)+`<div class="row"><button type="button" class="mini" data-act="detail" data-id="${id(t)}">地圖與明細</button><button type="button" class="mini" data-act="recalc" data-id="${id(t)}">重新計算</button><button type="button" class="mini" data-act="reopen" data-id="${id(t)}">補加停靠點</button><button type="button" class="mini danger" data-act="del" data-id="${id(t)}">刪除整筆</button></div></div></details></li>`).join(''):'<li class="sub">還沒有待報帳的行程</li>'}
 // Keeps the closed line in step while fields are edited, without re-sorting under the finger.
 function refreshSummary(trip){const sum=document.querySelector(`#pending [data-card="${CSS.escape(String(trip.id))}"] summary`);if(sum)sum.innerHTML=tripSummary(trip);renderPendingSum()}
 function renderPendingSum(){const list=S.trips,todo=list.filter(t=>missingFields(formOf(t)).length).length,total=list.reduce((n,t)=>n+Number(ExpenseSheet.intText(t.total_km)),0),walk=list.reduce((n,t)=>n+walkOf(t),0);
@@ -187,7 +216,7 @@ if(act==='recalc')await recalc(trip);
 // Back to the live trip, where search, map pick and ↑↓ can add a forgotten stop; 只計算 saves it again.
 if(act==='reopen'){if(S.current)return cardMsg(trip,'目前已有進行中的行程，請先計算或放棄它，再來補加');
 if(!confirm('把這筆改回進行中？\n可以用搜尋或地圖補加停靠點，再用 ↑ 移到正確位置，補完按「只計算」重新算里程。'))return;
-S.current={stops:(trip.stops||[]).map(s=>Object.assign({},s)),form:Object.assign(defaultForm(),trip.form)};S.trips=S.trips.filter(t=>t!==trip);
+S.current={stops:(trip.stops||[]).map(s=>Object.assign({},s)),form:Object.assign(defaultForm(),trip.form),invoices:(trip.invoices||[]).map(v=>Object.assign({},v))};S.trips=S.trips.filter(t=>t!==trip);
 if($('result').querySelector(`[data-trip="${CSS.escape(id)}"]`))$('result').innerHTML='';await save();render();status('已改回進行中，補加停靠點後按「只計算」');$('trip').scrollIntoView({block:'start'})}
 if(act==='stopdel'||act==='stopup'||act==='stopdown'){const i=+btn.dataset.i,st=(trip.stops||[]).slice(),s=st[i];if(!s)return;
 if(act==='stopdel'){if(st.length<=2)return cardMsg(trip,'至少要有兩個點，不能再刪');if(!confirm(`刪除「${s.name}」？會重新計算這筆行程的里程。`))return;st.splice(i,1);
@@ -286,11 +315,12 @@ S.settings.lastBackup=new Date().toISOString();await save();renderBackup();statu
 const num=v=>Number.isFinite(+v)?+v:0;
 function okStop(s){return s&&typeof s==='object'&&Number.isFinite(+s.lat)&&Number.isFinite(+s.lng)}
 function cleanStop(s){return Object.assign({},s,{lat:+s.lat,lng:+s.lng,name:String(s.name||'停靠點'),accuracy:s.accuracy==null?undefined:num(s.accuracy)})}
+function cleanInvoices(list){return (Array.isArray(list)?list:[]).filter(v=>v&&Invoice.normalizeNo(v.no)).map(v=>({no:Invoice.normalizeNo(v.no),date:String(v.date||''),amount:num(v.amount),buyer:/^\d{8}$/.test(v.buyer)?v.buyer:'',seller:/^\d{8}$/.test(v.seller)?v.seller:''}))}
 function cleanTrip(t){if(!t||typeof t!=='object'||!Array.isArray(t.stops))return null;
 return Object.assign({},t,{id:num(t.id)||Date.now()+Math.random(),stops:t.stops.filter(okStop).map(cleanStop),total_km:num(t.total_km),freeway_km:num(t.freeway_km),ramp_km:num(t.ramp_km),
 legs:(Array.isArray(t.legs)?t.legs:[]).map(l=>({from:String(l&&l.from||''),to:String(l&&l.to||''),km:num(l&&l.km),freeway_km:num(l&&l.freeway_km),ramp_km:num(l&&l.ramp_km)})),
 roads:Array.isArray(t.roads)?t.roads.map(r=>({name:String(r&&r.name||''),ref:String(r&&r.ref||''),kind:r&&r.kind==='ramp'?'ramp':'freeway',km:num(r&&r.km)})):undefined,
-polyline:Array.isArray(t.polyline)?t.polyline.filter(p=>Array.isArray(p)&&Number.isFinite(+p[0])&&Number.isFinite(+p[1])).map(p=>[+p[0],+p[1]]):undefined})}
+invoices:cleanInvoices(t.invoices),polyline:Array.isArray(t.polyline)?t.polyline.filter(p=>Array.isArray(p)&&Number.isFinite(+p[0])&&Number.isFinite(+p[1])).map(p=>[+p[0],+p[1]]):undefined})}
 async function importBackup(file){let b;try{b=JSON.parse(await file.text())}catch(e){return status('這不是出差里程的備份檔')}
 const d=b&&b.app==='trip-mileage'&&b.data;if(!d||!Array.isArray(d.trips))return status('這不是出差里程的備份檔');
 const have=new Set(S.trips.map(t=>String(t.id)));
@@ -304,7 +334,7 @@ S.trips=S.trips.concat(trips).sort((a,b)=>b.id-a.id);S.places=S.places.concat(pl
 const mine=profile(),theirs=ExpenseSheet.profileOf(d.settings&&d.settings.profile),wasEmpty=ExpenseSheet.missingProfile(mine).length===3;
 for(const k of ['payee','empId','carNo'])if(!mine[k]&&theirs[k])mine[k]=theirs[k];
 if(wasEmpty)mine.fuel=theirs.fuel;S.settings.profile=mine;
-let cur='';if(!S.current&&d.current&&Array.isArray(d.current.stops)&&d.current.stops.some(okStop)){S.current={stops:d.current.stops.filter(okStop).map(cleanStop),form:Object.assign(defaultForm(),d.current.form)};cur='，並還原進行中的行程'}
+let cur='';if(!S.current&&d.current&&Array.isArray(d.current.stops)&&d.current.stops.some(okStop)){S.current={stops:d.current.stops.filter(okStop).map(cleanStop),form:Object.assign(defaultForm(),d.current.form),invoices:cleanInvoices(d.current.invoices)};cur='，並還原進行中的行程'}
 await save();render();status(`已匯入 ${trips.length} 筆行程、${places.length} 個地點${cur}`)}
 function renderBackup(){const t=S.settings.lastBackup;$('backupInfo').textContent=t?'上次備份：'+new Date(t).toLocaleString('zh-TW'):'還沒有備份過。換手機或清除 Safari 資料前，記得先匯出備份。'}
 $('btnBackup').onclick=()=>{exportBackup().catch(e=>status(e.message||'備份失敗'))};

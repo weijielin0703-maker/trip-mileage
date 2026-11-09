@@ -102,14 +102,20 @@ catch(err){o.say(err.message||'辨識失敗，請改用「手動輸入」')}});
 let qrStop=null;
 function closeScan(){if(qrStop){qrStop();qrStop=null}}
 async function scanInvoice(o){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return o.say('這個瀏覽器不能開鏡頭，請改用「拍照辨識」');
-let stream;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}},audio:false})}
+let stream;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:3840},height:{ideal:2160}},audio:false})}
 catch(e){return o.say('沒有鏡頭權限，請在設定允許相機，或改用「拍照辨識」')}
 const v=$('qrVideo');v.srcObject=stream;$('qrScan').hidden=false;$('qrMsg').textContent='把發票左邊的 QR code 放進框裡';
-let live=true,turn=0;qrStop=()=>{live=false;stream.getTracks().forEach(t=>t.stop());v.srcObject=null;$('qrScan').hidden=true};
+let live=true;qrStop=()=>{live=false;stream.getTracks().forEach(t=>t.stop());v.srcObject=null;$('qrScan').hidden=true};
 try{await v.play()}catch(e){}
-try{await Invoice.loadJsQR()}catch(e){closeScan();return o.say(e.message)}
-while(live){if(v.readyState>=2){const hit=await Invoice.readFrame(v,turn++);if(hit&&live){closeScan();await addInvoice(o,hit);return}}
-await new Promise(r=>setTimeout(r,120))}}
+lensFor(stream);
+try{await Invoice.loadZXing()}catch(e){closeScan();return o.say(e.message)}
+while(live){if(v.readyState>=2){let hit=null;try{hit=await Invoice.readFrame(v)}catch(e){}if(hit&&live){closeScan();await addInvoice(o,hit);return}}
+await new Promise(r=>setTimeout(r,80))}}
+// Where the browser allows it: keep refocusing, and zoom 2x so the receipt can be held at a normal distance.
+function lensFor(stream){const t=stream.getVideoTracks()[0],c=t&&t.getCapabilities?t.getCapabilities():{},adv={};
+if(Array.isArray(c.focusMode)&&c.focusMode.includes('continuous'))adv.focusMode='continuous';
+if(c.zoom&&c.zoom.max>=1.5)adv.zoom=Math.min(2,c.zoom.max);
+if(Object.keys(adv).length)t.applyConstraints({advanced:[adv]}).catch(()=>{})}
 $('qrCancel').onclick=closeScan;
 document.addEventListener('click',async e=>{const btn=e.target.closest&&e.target.closest('[data-invadd],[data-invdel],[data-invscan]');if(!btn)return;const o=invoiceOwner(btn);if(!o)return;
 if(btn.dataset.invscan!==undefined)return scanInvoice(o);

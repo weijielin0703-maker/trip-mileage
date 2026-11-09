@@ -25,15 +25,23 @@
     return m ? m[1].toUpperCase() + '-' + m[2] : '';
   }
 
-  function loadJsQR() {
-    if (self.jsQR) return Promise.resolve(self.jsQR);
-    return new Promise((ok, no) => {
+  // ZXing (zxing-cpp built to WebAssembly) copes with the small, thermal-printed codes on receipts.
+  let zx = null;
+  function loadZXing() {
+    if (zx) return zx;
+    zx = new Promise((ok, no) => {
       const s = document.createElement('script');
-      s.src = './vendor/jsQR.js';
-      s.onload = () => self.jsQR ? ok(self.jsQR) : no(new Error('條碼元件載入失敗'));
+      s.src = './vendor/zxing/reader.js';
+      s.onload = () => {
+        if (!self.ZXingWASM) return no(new Error('條碼元件載入失敗'));
+        ZXingWASM.prepareZXingModule({ overrides: { locateFile: p => './vendor/zxing/' + p } });
+        ok(ZXingWASM);
+      };
       s.onerror = () => no(new Error('條碼元件載入失敗，請確認網路'));
       document.head.appendChild(s);
     });
+    zx.catch(() => { zx = null; });
+    return zx;
   }
   async function loadImage(file) {
     if (self.createImageBitmap) {
@@ -51,76 +59,43 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
   }
-  // jsQR drops a byte segment it cannot read as UTF-8, and most POS machines write the item names
-  // in Big5, so the raw bytes are tried too. The fields that matter are plain ASCII at the start.
-  function hitOf(r) {
-    const raw = String.fromCharCode.apply(null, Array.from(r.binaryData || []).slice(0, 120));
-    return parse(r.data) || parse(raw);
-  }
-  // Parts of the picture to try, as fractions [x, y, w, h]: the two codes sit side by side and
-  // jsQR can mix up their corner marks when it sees both, so each half is tried on its own too.
-  const REGIONS = [[0, 0, 1, 1], [0, 0, .5, 1], [.5, 0, .5, 1], [0, 0, .6, 1], [.4, 0, .6, 1], [0, 0, 1, .5], [0, .5, 1, .5], [.2, .2, .6, .6], [.25, 0, .5, 1]];
-  // Scans one region of `src` scaled so its long side is at most `max` px. A right-hand QR found
-  // first is painted over and the scan repeated.
-  function scan(jsQR, src, region, max) {
+  // Pixels of `src` with its long side at most `max`.
+  function pixels(src, max) {
     const W = src.videoWidth || src.width || src.naturalWidth, H = src.videoHeight || src.height || src.naturalHeight;
     if (!W || !H) return null;
-    const sx = W * region[0], sy = H * region[1], sw = W * region[2], sh = H * region[3];
-    const k = Math.min(1, max / Math.max(sw, sh));
-    const w = Math.round(sw * k), h = Math.round(sh * k);
+    const k = Math.min(1, max / Math.max(W, H));
+    const w = Math.round(W * k), h = Math.round(H * k);
     const cv = document.createElement('canvas');
     cv.width = w;
     cv.height = h;
     const g = cv.getContext('2d', { willReadFrequently: true });
-    g.drawImage(src, sx, sy, sw, sh, 0, 0, w, h);
-    for (let i = 0; i < 3; i++) {
-      const r = jsQR(g.getImageData(0, 0, w, h).data, w, h);
-      if (!r) return null;
-      const hit = hitOf(r);
-      if (hit) return hit;
-      const L = r.location;
-      g.beginPath();
-      [L.topLeftCorner, L.topRightCorner, L.bottomRightCorner, L.bottomLeftCorner].forEach((p, j) => j ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
-      g.closePath();
-      g.lineWidth = 12;
-      g.fillStyle = g.strokeStyle = '#fff';
-      g.fill();
-      g.stroke();
-    }
-    return null;
+    g.drawImage(src, 0, 0, w, h);
+    return g.getImageData(0, 0, w, h);
   }
-  async function detect(src) {
-    if (!('BarcodeDetector' in self)) return null;
-    try {
-      const codes = await new BarcodeDetector({ formats: ['qr_code'] }).detect(src);
-      for (const c of codes) {
-        const hit = parse(c.rawValue);
-        if (hit) return hit;
-      }
-    } catch (e) {}
+  // The raw bytes are parsed, not the text: most POS machines write the item names in Big5, and the
+  // fields that matter are plain ASCII at the start. Only the left code (not "**...") parses.
+  async function decode(data) {
+    if (!data) return null;
+    const Z = await loadZXing();
+    const codes = await Z.readBarcodes(data, { formats: ['QRCode'], tryHarder: true, maxNumberOfSymbols: 4 });
+    for (const c of codes) {
+      const hit = parse(String.fromCharCode.apply(null, Array.from(c.bytes || []).slice(0, 120)));
+      if (hit) return hit;
+    }
     return null;
   }
   // Resolves to {no, date, amount, buyer, seller}, or null when no e-invoice QR code is found.
   async function read(file) {
     const img = await loadImage(file);
-    const quick = await detect(img);
-    if (quick) return quick;
-    const jsQR = await loadJsQR();
-    for (const max of [1600, 1000, 2400]) {
-      for (const region of REGIONS) {
-        const hit = scan(jsQR, img, region, max);
-        if (hit) return hit;
-        await new Promise(r => setTimeout(r, 0));
-      }
+    for (const max of [3000, 1600]) {
+      const hit = await decode(pixels(img, max));
+      if (hit) return hit;
     }
     return null;
   }
-  // One pass over the current camera frame; `turn` picks the region, so successive calls cycle through them.
-  async function readFrame(video, turn) {
-    const quick = await detect(video);
-    if (quick) return quick;
-    const jsQR = await loadJsQR();
-    return scan(jsQR, video, REGIONS[turn % REGIONS.length], 900);
+  // One pass over the current camera frame, at up to 2880 px so small codes keep their detail.
+  function readFrame(video) {
+    return decode(pixels(video, 2880));
   }
-  return { parse, normalizeNo, read, readFrame, loadJsQR };
+  return { parse, normalizeNo, read, readFrame, loadZXing };
 });

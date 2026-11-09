@@ -51,51 +51,76 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
   }
-  // Scans the photo scaled to `max` px. A right-hand QR found first is painted over and the scan repeated.
-  function scan(jsQR, img, max) {
-    const w0 = img.width || img.naturalWidth, h0 = img.height || img.naturalHeight;
-    const k = Math.min(1, max / Math.max(w0, h0));
-    const w = Math.round(w0 * k), h = Math.round(h0 * k);
+  // jsQR drops a byte segment it cannot read as UTF-8, and most POS machines write the item names
+  // in Big5, so the raw bytes are tried too. The fields that matter are plain ASCII at the start.
+  function hitOf(r) {
+    const raw = String.fromCharCode.apply(null, Array.from(r.binaryData || []).slice(0, 120));
+    return parse(r.data) || parse(raw);
+  }
+  // Parts of the picture to try, as fractions [x, y, w, h]: the two codes sit side by side and
+  // jsQR can mix up their corner marks when it sees both, so each half is tried on its own too.
+  const REGIONS = [[0, 0, 1, 1], [0, 0, .5, 1], [.5, 0, .5, 1], [0, 0, .6, 1], [.4, 0, .6, 1], [0, 0, 1, .5], [0, .5, 1, .5], [.2, .2, .6, .6], [.25, 0, .5, 1]];
+  // Scans one region of `src` scaled so its long side is at most `max` px. A right-hand QR found
+  // first is painted over and the scan repeated.
+  function scan(jsQR, src, region, max) {
+    const W = src.videoWidth || src.width || src.naturalWidth, H = src.videoHeight || src.height || src.naturalHeight;
+    if (!W || !H) return null;
+    const sx = W * region[0], sy = H * region[1], sw = W * region[2], sh = H * region[3];
+    const k = Math.min(1, max / Math.max(sw, sh));
+    const w = Math.round(sw * k), h = Math.round(sh * k);
     const cv = document.createElement('canvas');
     cv.width = w;
     cv.height = h;
     const g = cv.getContext('2d', { willReadFrequently: true });
-    g.drawImage(img, 0, 0, w, h);
+    g.drawImage(src, sx, sy, sw, sh, 0, 0, w, h);
     for (let i = 0; i < 3; i++) {
       const r = jsQR(g.getImageData(0, 0, w, h).data, w, h);
       if (!r) return null;
-      const hit = parse(r.data);
+      const hit = hitOf(r);
       if (hit) return hit;
       const L = r.location;
-      g.fillStyle = '#fff';
       g.beginPath();
       [L.topLeftCorner, L.topRightCorner, L.bottomRightCorner, L.bottomLeftCorner].forEach((p, j) => j ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
       g.closePath();
       g.lineWidth = 12;
-      g.strokeStyle = '#fff';
+      g.fillStyle = g.strokeStyle = '#fff';
       g.fill();
       g.stroke();
     }
     return null;
   }
+  async function detect(src) {
+    if (!('BarcodeDetector' in self)) return null;
+    try {
+      const codes = await new BarcodeDetector({ formats: ['qr_code'] }).detect(src);
+      for (const c of codes) {
+        const hit = parse(c.rawValue);
+        if (hit) return hit;
+      }
+    } catch (e) {}
+    return null;
+  }
   // Resolves to {no, date, amount, buyer, seller}, or null when no e-invoice QR code is found.
   async function read(file) {
     const img = await loadImage(file);
-    if ('BarcodeDetector' in self) {
-      try {
-        const codes = await new BarcodeDetector({ formats: ['qr_code'] }).detect(img);
-        for (const c of codes) {
-          const hit = parse(c.rawValue);
-          if (hit) return hit;
-        }
-      } catch (e) {}
-    }
+    const quick = await detect(img);
+    if (quick) return quick;
     const jsQR = await loadJsQR();
-    for (const max of [1600, 1000, 2400, 700]) {
-      const hit = scan(jsQR, img, max);
-      if (hit) return hit;
+    for (const max of [1600, 1000, 2400]) {
+      for (const region of REGIONS) {
+        const hit = scan(jsQR, img, region, max);
+        if (hit) return hit;
+        await new Promise(r => setTimeout(r, 0));
+      }
     }
     return null;
   }
-  return { parse, normalizeNo, read };
+  // One pass over the current camera frame; `turn` picks the region, so successive calls cycle through them.
+  async function readFrame(video, turn) {
+    const quick = await detect(video);
+    if (quick) return quick;
+    const jsQR = await loadJsQR();
+    return scan(jsQR, video, REGIONS[turn % REGIONS.length], 900);
+  }
+  return { parse, normalizeNo, read, readFrame, loadJsQR };
 });

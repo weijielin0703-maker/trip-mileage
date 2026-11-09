@@ -79,7 +79,7 @@ catch(e){say(String(e.message||'重新計算失敗').replace(/行程已保留.*$
 // Parking invoices of the live trip ('live') or a pending trip (its id). Photos are read, not kept.
 function invoiceBlock(owner,key){const list=owner.invoices||[];
 return `<div class="inv" data-inv="${esc(key)}"><div class="inv-head">停車發票</div>`+(list.length?`<ul class="inv-list">`+list.map((v,i)=>`<li><span><b>${esc(v.no)}</b>　${esc(v.amount)} 元<span class="sub">　${esc(v.date||'')}　</span>`+(v.buyer?`<span class="sub">統編 ${esc(v.buyer)}</span>`:`<span class="warn">沒有打統編</span>`)+`</span><button type="button" class="mini danger" data-invdel="${i}">刪除</button></li>`).join('')+`</ul>`:'')+
-`<div class="row"><label class="btn mini">拍照辨識<input type="file" accept="image/*" data-invfile hidden></label><button type="button" class="mini" data-invadd>手動輸入</button></div></div>`}
+`<div class="row"><button type="button" class="mini cyan" data-invscan>掃描 QR</button><label class="btn mini">拍照辨識<input type="file" accept="image/*" data-invfile hidden></label><button type="button" class="mini" data-invadd>手動輸入</button></div></div>`}
 function invoiceOwner(el){const box=el.closest('[data-inv]');if(!box)return null;const k=box.dataset.inv;
 const owner=k==='live'?S.current:S.trips.find(t=>String(t.id)===k);if(!owner)return null;
 return{owner,say:k==='live'?status:t=>cardMsg(owner,t)}}
@@ -96,9 +96,23 @@ o.say(`已加入發票 ${v.no}，${v.amount} 元`+(v.buyer?'':'（這張沒有�
 document.addEventListener('change',async e=>{const el=e.target;if(!el.matches||!el.matches('[data-invfile]'))return;
 const f=el.files&&el.files[0];el.value='';const o=invoiceOwner(el);if(!f||!o)return;
 o.say('辨識發票中…');
-try{const v=await Invoice.read(f);if(!v)return o.say('找不到電子發票的 QR code。請拍清楚左邊那個 QR code，或改用「手動輸入」');await addInvoice(o,v)}
+try{const v=await Invoice.read(f);if(!v)return o.say('照片裡讀不到電子發票的 QR code。請改用「掃描 QR」對準左邊那個，或「手動輸入」');await addInvoice(o,v)}
 catch(err){o.say(err.message||'辨識失敗，請改用「手動輸入」')}});
-document.addEventListener('click',async e=>{const btn=e.target.closest&&e.target.closest('[data-invadd],[data-invdel]');if(!btn)return;const o=invoiceOwner(btn);if(!o)return;
+// Live camera: reads frames until the left QR code of an e-invoice turns up.
+let qrStop=null;
+function closeScan(){if(qrStop){qrStop();qrStop=null}}
+async function scanInvoice(o){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return o.say('這個瀏覽器不能開鏡頭，請改用「拍照辨識」');
+let stream;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}},audio:false})}
+catch(e){return o.say('沒有鏡頭權限，請在設定允許相機，或改用「拍照辨識」')}
+const v=$('qrVideo');v.srcObject=stream;$('qrScan').hidden=false;$('qrMsg').textContent='把發票左邊的 QR code 放進框裡';
+let live=true,turn=0;qrStop=()=>{live=false;stream.getTracks().forEach(t=>t.stop());v.srcObject=null;$('qrScan').hidden=true};
+try{await v.play()}catch(e){}
+try{await Invoice.loadJsQR()}catch(e){closeScan();return o.say(e.message)}
+while(live){if(v.readyState>=2){const hit=await Invoice.readFrame(v,turn++);if(hit&&live){closeScan();await addInvoice(o,hit);return}}
+await new Promise(r=>setTimeout(r,120))}}
+$('qrCancel').onclick=closeScan;
+document.addEventListener('click',async e=>{const btn=e.target.closest&&e.target.closest('[data-invadd],[data-invdel],[data-invscan]');if(!btn)return;const o=invoiceOwner(btn);if(!o)return;
+if(btn.dataset.invscan!==undefined)return scanInvoice(o);
 if(btn.dataset.invdel!==undefined){const list=(o.owner.invoices||[]).slice(),v=list[+btn.dataset.invdel];if(!v||!confirm(`刪除發票 ${v.no}？`))return;list.splice(+btn.dataset.invdel,1);await setInvoices(o.owner,list);return o.say(`已刪除發票 ${v.no}`)}
 const no=Invoice.normalizeNo(prompt('發票號碼（例如 AB12345678）')||'');if(!no)return o.say('發票號碼要是 2 個英文字母加 8 個數字');
 const amount=Math.round(Number(clean(prompt('金額（元）')||'')));if(!(amount>0))return o.say('金額要填大於 0 的數字');

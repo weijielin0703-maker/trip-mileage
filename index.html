@@ -131,6 +131,12 @@ addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')_
 </section>
 <p class="fineprint">總里程來自 OSRM／OpenStreetMap，不是直線距離。行走里程是國道加上交流道、匝道，四捨五入成整數後寫進報帳表。地圖 © OpenStreetMap 貢獻者。資料只存在這台裝置。</p>
 </main>
+<div id="qrScan" class="qrscan" hidden role="dialog" aria-label="掃描發票 QR code">
+ <video id="qrVideo" playsinline muted></video>
+ <div class="qrframe" aria-hidden="true"></div>
+ <p id="qrMsg">把發票左邊的 QR code 放進框裡</p>
+ <button type="button" id="qrCancel" class="big">取消</button>
+</div>
 <script src="./routing.js"></script>
 <script src="./geocode.js"></script>
 <script src="./expense-sheet.js"></script>

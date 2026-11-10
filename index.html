@@ -23,72 +23,64 @@ window.__failedScripts=[];
 addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')__failedScripts.push(t.src.split('/').pop()+' 下載失敗');else if(e.filename)__failedScripts.push(e.filename.split('/').pop()+'：'+e.message)},true);
 </script>
 </head>
-<body>
+<body data-view="trip">
 <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
-<svg class="sprite" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
-  <symbol id="i-pin" viewBox="0 0 16 16">
-    <rect x="6" y="1" width="4" height="1" fill="currentColor"/>
-    <rect x="4" y="2" width="8" height="1" fill="currentColor"/>
-    <rect x="3" y="3" width="3" height="3" fill="currentColor"/>
-    <rect x="10" y="3" width="3" height="3" fill="currentColor"/>
-    <rect x="6" y="3" width="4" height="1" fill="currentColor"/>
-    <rect x="6" y="5" width="4" height="1" fill="currentColor"/>
-    <rect x="4" y="6" width="8" height="1" fill="currentColor"/>
-    <rect x="5" y="7" width="6" height="1" fill="currentColor"/>
-    <rect x="6" y="8" width="4" height="1" fill="currentColor"/>
-    <rect x="7" y="9" width="2" height="4" fill="currentColor"/>
-  </symbol>
-  <symbol id="i-house" viewBox="0 0 16 16">
-    <rect x="7" y="1" width="2" height="1" fill="currentColor"/>
-    <rect x="5" y="2" width="6" height="1" fill="currentColor"/>
-    <rect x="3" y="3" width="10" height="1" fill="currentColor"/>
-    <rect x="2" y="4" width="12" height="2" fill="currentColor"/>
-    <rect x="3" y="6" width="10" height="1" fill="currentColor"/>
-    <rect x="3" y="7" width="3" height="5" fill="currentColor"/>
-    <rect x="10" y="7" width="3" height="5" fill="currentColor"/>
-    <rect x="6" y="9" width="4" height="3" fill="currentColor"/>
-    <rect x="3" y="12" width="10" height="1" fill="currentColor"/>
-  </symbol>
-  <symbol id="i-flag" viewBox="0 0 16 16">
-    <rect x="3" y="1" width="2" height="14" fill="currentColor"/>
-    <rect x="5" y="2" width="8" height="1" fill="currentColor"/>
-    <rect x="5" y="3" width="7" height="1" fill="currentColor"/>
-    <rect x="5" y="4" width="6" height="1" fill="currentColor"/>
-    <rect x="5" y="5" width="5" height="1" fill="currentColor"/>
-    <rect x="5" y="6" width="4" height="1" fill="currentColor"/>
-    <rect x="5" y="7" width="3" height="1" fill="currentColor"/>
-    <rect x="5" y="8" width="2" height="1" fill="currentColor"/>
-  </symbol>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4m0 1h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-house" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4L3 6.5V20l6-2.500 6 2.500 6-2.500V4l-6 2.500zM9 4v13.500M15 6.500V20"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3.500 3.500 0 0 0 0-7H9a3.500 3.500 0 0 1 0-7h6.500"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2zM9 8h6M9 12h6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.500v3M12 18.500v3M2.500 12h3M18.500 12h3M5.300 5.300l2.100 2.100M16.600 16.600l2.100 2.100M5.300 18.700l2.100-2.100M16.600 7.400l2.100-2.100"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2.500v2.500H14zM17.500 17.500H20V20h-2.500zM20 14v1M14 20h1"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l1.500-2.500h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4L16.500 4.500a2.100 2.100 0 0 1 3 3L8 19zM14.500 6.500l3 3"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.500l2.600 5.300 5.900.9-4.300 4.100 1 5.800L12 16.900l-5.200 2.700 1-5.800-4.300-4.100 5.900-.9z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></symbol>
+  <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></symbol>
+  <symbol id="i-calc" viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8.500 7.500h7M8.500 12h.01M12 12h.01M15.500 12h.01M8.500 16h.01M12 16h.01M15.500 16h.01"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
 </svg>
-<header>
-  <img class="badge" src="./icon.svg" alt="" width="56" height="56">
-  <div>
+<header class="bar">
+  <img class="badge" src="./icon.svg" alt="" width="40" height="40">
+  <div class="brand">
     <p class="brand-kicker">MILEAGE LINK</p>
     <h1>出差里程</h1>
   </div>
+  <button type="button" id="chip" class="chip" hidden></button>
 </header>
 <main>
-<section class="win" id="setupBox" hidden>
-<h2><span>第一次使用</span></h2>
+<section class="win" id="setupBox" data-tab="trip" hidden>
+<h2><small>SETUP</small>第一次使用</h2>
 <p class="flavor">匯出報帳表前，請先在「設定」填好<b id="setupMissing"></b>。只會存在這台手機，不會上傳。</p>
-<button type="button" id="btnSetup" class="big gold">前往設定</button>
+<button type="button" id="btnSetup" class="big gold"><svg class="ico" aria-hidden="true"><use href="#i-gear"/></svg>前往設定</button>
 </section>
-<section class="win" id="trip">
-<h2><span>旅程</span></h2>
+<section class="win" id="trip" data-tab="trip">
+<h2><small>TRIP</small>旅程</h2>
 <div id="tripIdle">
-  <p class="flavor">今天要去哪裡？</p>
-  <button type="button" id="btnStart" class="big gold"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-flag" xlink:href="#i-flag"/></svg>開始行程</button>
+  <p class="hero-date" id="heroDate"></p>
+  <p class="hero-q">今天要去哪裡？</p>
+  <button type="button" id="btnStart" class="big gold"><svg class="ico" aria-hidden="true"><use href="#i-flag"/></svg>開始行程</button>
+  <p class="sub hero-note">按下去會記錄現在的位置，當作這趟的起點。</p>
+  <div class="stats" id="idleStats"></div>
 </div>
 <div id="tripActive" hidden>
- <button type="button" id="btnHere" class="big cyan"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-pin" xlink:href="#i-pin"/></svg>記錄這裡</button>
- <div class="row"><input id="q" placeholder="地址、地標、常用地點或座標" autocomplete="off" enterkeyhint="search"><button type="button" id="btnSearch">搜尋</button><button type="button" id="btnPick">地圖選點</button></div>
+ <button type="button" id="btnHere" class="big cyan"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>記錄這裡</button>
+ <div class="row searchrow"><input id="q" placeholder="地址、地標、常用地點或座標" autocomplete="off" enterkeyhint="search"><button type="button" id="btnSearch"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>搜尋</button><button type="button" id="btnPick"><svg class="ico" aria-hidden="true"><use href="#i-map"/></svg>地圖選點</button></div>
  <ul id="results"></ul>
  <div id="picker" hidden>
   <p class="sub">點地圖或拖曳圖釘到正確位置。可以先搜尋附近的路名，地圖會移到那裡。</p>
   <div class="map pickmap" id="pickMap"></div>
   <div class="row"><button type="button" id="btnPickAdd" class="cyan">加入這個點</button><button type="button" id="btnPickCancel">取消</button></div>
  </div>
+ <h3>停靠點<span class="sub">點站名可以改名</span></h3>
  <ol id="stops"></ol>
+ <h3>報帳資料</h3>
  <div class="fields" id="liveFields">
   <label>公出日期<input id="fDate" type="date" data-k="date"></label>
   <label>時間<select id="fTime" data-k="time"></select></label>
@@ -97,43 +89,50 @@ addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT')_
   <label>停車費<input id="fPark" type="number" data-k="parking" inputmode="decimal" step="1" placeholder="空白為 0"></label>
  </div>
  <div id="liveInv"></div>
- <button type="button" id="btnEnd" class="big mag"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-house" xlink:href="#i-house"/></svg>結束並計算（記錄目前位置）</button>
- <div class="row"><button type="button" id="btnCalc">只計算（不加點）</button><button type="button" id="btnCancel" class="danger">放棄行程</button></div>
+ <button type="button" id="btnEnd" class="big mag"><svg class="ico" aria-hidden="true"><use href="#i-house"/></svg><span>結束並計算<small>記錄目前位置</small></span></button>
+ <div class="row split"><button type="button" id="btnCalc">只計算（不加點）</button><button type="button" id="btnCancel" class="danger">放棄行程</button></div>
 </div>
-<div id="status"></div>
+<div id="status" role="status"></div>
 <div id="result"></div>
 </section>
-<section class="win" id="pendingBox">
-<h2><span>待報帳行程</span></h2>
+<section class="win" id="pendingBox" data-tab="pending">
+<h2><small>EXPENSE</small>待報帳行程</h2>
 <p class="sub" id="pendingSum"></p>
 <ul id="pending"></ul>
-<button type="button" id="btnXls" class="big gold">匯出公司報帳表 (.xls)</button>
-<button type="button" id="btnClear" class="danger" hidden>匯出後清空</button>
+<button type="button" id="btnXls" class="big gold"><svg class="ico" aria-hidden="true"><use href="#i-export"/></svg>匯出公司報帳表 (.xls)</button>
+<button type="button" id="btnClear" class="danger wide" hidden>匯出後清空</button>
 </section>
-<section class="win">
-<h2><span>常用地點</span></h2>
+<section class="win" data-tab="more">
+<h2><small>PLACES</small>常用地點</h2>
 <ul id="places"></ul>
 </section>
-<section class="win" id="settingsBox">
-<h2><span>設定</span></h2>
+<section class="win" id="settingsBox" data-tab="more">
+<h2><small>PROFILE</small>設定</h2>
+<div class="fields">
 <label>受款人<input id="setPayee" type="text" autocomplete="name" placeholder="必填"></label>
 <label>工號<input id="setEmp" type="text" inputmode="numeric" autocomplete="off" placeholder="必填"></label>
 <label>車號<input id="setCar" type="text" autocomplete="off" placeholder="必填，例如 ABC-1234"></label>
 <label>油品<select id="setFuel"><option>92</option><option>95</option><option>98</option></select></label>
+</div>
 <p class="fixedmeta" id="fixedMeta"></p>
 </section>
-<section class="win" id="backupBox">
-<h2><span>備份</span></h2>
+<section class="win" id="backupBox" data-tab="more">
+<h2><small>BACKUP</small>備份</h2>
 <p class="flavor">資料只存在這台手機。匯出的備份檔可以存到「檔案」或雲端硬碟，換手機時再匯入。</p>
-<div class="row"><button type="button" id="btnBackup">匯出備份 (.json)</button><button type="button" id="btnRestore">匯入備份</button></div>
+<div class="row split"><button type="button" id="btnBackup"><svg class="ico" aria-hidden="true"><use href="#i-export"/></svg>匯出備份</button><button type="button" id="btnRestore"><svg class="ico" aria-hidden="true"><use href="#i-import"/></svg>匯入備份</button></div>
 <input type="file" id="restoreFile" accept=".json,application/json" hidden>
 <p class="sub" id="backupInfo"></p>
 </section>
-<p class="fineprint">總里程來自 OSRM／OpenStreetMap，不是直線距離。行走里程是國道加上交流道、匝道，四捨五入成整數後寫進報帳表。地圖 © OpenStreetMap 貢獻者。資料只存在這台裝置。</p>
+<p class="fineprint" data-tab="more">總里程來自 OSRM／OpenStreetMap，不是直線距離。行走里程是國道加上交流道、匝道，四捨五入成整數後寫進報帳表。地圖 © OpenStreetMap 貢獻者。資料只存在這台裝置。</p>
 </main>
+<nav class="tabs" aria-label="主選單">
+ <button type="button" class="tab" data-go="trip" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-route"/></svg><span>行程</span></button>
+ <button type="button" class="tab" data-go="pending"><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg><span>報帳</span><b class="tab-badge" id="tabBadge" hidden></b></button>
+ <button type="button" class="tab" data-go="more"><svg class="ico" aria-hidden="true"><use href="#i-gear"/></svg><span>設定</span></button>
+</nav>
 <div id="qrScan" class="qrscan" hidden role="dialog" aria-label="掃描發票 QR code">
  <video id="qrVideo" playsinline muted></video>
- <div class="qrframe" aria-hidden="true"></div>
+ <div class="qrframe" aria-hidden="true"><i></i></div>
  <p id="qrMsg">把發票左邊的 QR code 放進框裡</p>
  <button type="button" id="qrCancel" class="big">取消</button>
 </div>
